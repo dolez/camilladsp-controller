@@ -1,0 +1,17 @@
+{
+  "name": "@camilladsp-controller/node-client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.2",
+    "bonjour": "^3.5.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "camilladsp-controller",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "master/*",
+    "node-client",
+    "dev/*"
+  ],
+  "scripts": {
+    "dev": "docker compose -f dev/docker-compose.yml up",
+    "dev:stop": "docker compose -f dev/docker-compose.yml down",
+    "build:master": "./scripts/build-master-image.sh",
+    "build:node": "./scripts/build-node-image.sh",
+    "test": "npm run test --workspaces"
+  }
+}

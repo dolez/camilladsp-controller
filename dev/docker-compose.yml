@@ -1,0 +1,51 @@
+# dev/docker-compose.yml
+version: '3.8'
+
+services:
+  master-backend:
+    build: 
+      context: ../master/backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../master/backend:/app
+      - /app/node_modules
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+
+  master-frontend:
+    build:
+      context: ../master/frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../master/frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000
+    depends_on:
+      - master-backend
+
+  mock-node-1:
+    build:
+      context: ../node-client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=mock-node-1
+      - NODE_PORT=5001
+      - MASTER_URL=http://master-backend:4000
+    ports:
+      - "5001:5001"
+
+  mock-node-2:
+    build:
+      context: ../node-client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_NAME=mock-node-2
+      - NODE_PORT=5002
+      - MASTER_URL=http://master-backend:4000
+    ports:
+      - "5002:5002"

@@ -1,0 +1,14 @@
+[Unit]
+Description=CamillaDSP Node Client
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/camilladsp-controller/node-client
+ExecStart=/usr/bin/npm start
+Restart=always
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

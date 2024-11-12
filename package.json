@@ -10,8 +10,13 @@
   "scripts": {
     "dev": "docker compose -f dev/docker-compose.yml up",
     "dev:stop": "docker compose -f dev/docker-compose.yml down",
-    "build:master": "./scripts/build-master-image.sh",
-    "build:node": "./scripts/build-node-image.sh",
+    "build:master": "./scripts/deployment/deploy-master.sh",
+    "build:node": "./scripts/deployment/deploy-node.sh",
+    "setup:master-network": "./scripts/network/setup-master-network.sh",
+    "setup:node-network": "./scripts/network/setup-node-network.sh",
+    "image:build": "./scripts/image/build-image.sh",
+    "image:flash-master": "./scripts/image/flash-image.sh master",
+    "image:flash-node": "./scripts/image/flash-image.sh node",
     "test": "npm run test --workspaces"
   }
 }

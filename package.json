@@ -1,0 +1,28 @@
+{
+  "name": "camilladsp-controller",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "vite",
+    "dev:local": "./scripts/dev-local.sh",
+    "dev:pi": "./scripts/dev-sync.sh watch",
+    "dev:pi:setup": "./scripts/dev-sync.sh setup",
+    "build": "NODE_ENV=production vite build",
+    "build:dev": "NODE_ENV=development vite build",
+    "sync": "./scripts/dev-sync.sh sync",
+    "server": "nodemon server.js"
+  },
+  "dependencies": {
+    "dbus-native": "^0.4.0",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.7.0",
+    "nodemon": "^3.1.9",
+    "preact": "^10.19.0",
+    "vite": "^5.0.0"
+  }
+}

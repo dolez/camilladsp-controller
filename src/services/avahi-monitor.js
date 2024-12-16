@@ -1,121 +1,72 @@
-// src/services/avahi-monitor.js
-const dbus = require("dbus-native");
+const { Bonjour } = require("bonjour-service");
 
-class AvahiMonitor {
+class ServiceMonitor {
   constructor(io) {
     this.io = io;
     this.services = new Map();
-    this.bus = dbus.systemBus();
-    this.avahiServer = null;
+    this.bonjour = new Bonjour();
+  }
+
+  getIpAddress(addresses) {
+    // Filtre pour trouver la première adresse IPv4
+    return addresses.find((addr) => {
+      // Vérifie si c'est une adresse IPv4 valide
+      const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      return ipv4Regex.test(addr);
+    });
   }
 
   start() {
-    this.bus
-      .getService("org.freedesktop.Avahi")
-      .getInterface("/", "org.freedesktop.Avahi.Server", (err, server) => {
-        if (err) {
-          console.error("Erreur connexion Avahi:", err);
-          return;
-        }
+    return new Promise((resolve) => {
+      console.log("Démarrage du monitoring des services...");
 
-        this.avahiServer = server;
-        this.setupBrowser();
+      const browser = this.bonjour.find({
+        type: "camilladsp",
       });
-  }
 
-  setupBrowser() {
-    this.avahiServer.ServiceBrowserNew(
-      -1,
-      -1,
-      "_camilladsp._tcp",
-      "local",
-      0,
-      (err, browserPath) => {
-        if (err) {
-          console.error("Erreur browser service:", err);
-          return;
+      browser.on("up", (service) => {
+        console.log("Service détecté:", service.name);
+        console.log("Adresses disponibles:", service.addresses);
+
+        const ipAddress = this.getIpAddress(service.addresses);
+
+        if (ipAddress) {
+          this.services.set(service.name, {
+            name: service.name,
+            host: service.host,
+            address: ipAddress,
+            port: service.port,
+            txt: service.txt || {},
+          });
+          console.log("Service ajouté avec IP:", ipAddress);
+          this.broadcastUpdate();
+        } else {
+          console.log("Aucune adresse IP valide trouvée pour:", service.name);
         }
+      });
 
-        this.bus
-          .getService("org.freedesktop.Avahi")
-          .getInterface(
-            browserPath,
-            "org.freedesktop.Avahi.ServiceBrowser",
-            (err, browser) => {
-              if (err) {
-                console.error("Erreur interface browser:", err);
-                return;
-              }
-              this.handleServiceUpdates(browser);
-            }
-          );
-      }
-    );
-  }
-
-  handleServiceUpdates(browser) {
-    browser.on("ItemNew", (iface, protocol, name, type, domain, flags) => {
-      this.resolveService(iface, protocol, name, type, domain);
-    });
-
-    browser.on("ItemRemove", (iface, protocol, name, type, domain, flags) => {
-      this.services.delete(name);
-      this.broadcastUpdate();
-    });
-  }
-
-  resolveService(iface, protocol, name, type, domain) {
-    this.avahiServer.ResolveService(
-      iface,
-      protocol,
-      name,
-      type,
-      domain,
-      -1,
-      0,
-      (
-        err,
-        iface,
-        protocol,
-        name,
-        type,
-        domain,
-        host,
-        aprotocol,
-        address,
-        port,
-        txt,
-        flags
-      ) => {
-        if (err) {
-          console.error("Erreur résolution service:", err);
-          return;
-        }
-
-        this.services.set(name, {
-          name,
-          host,
-          address,
-          port,
-          txt: this.parseTxt(txt),
-        });
-
+      browser.on("down", (service) => {
+        console.log("Service perdu:", service.name);
+        this.services.delete(service.name);
         this.broadcastUpdate();
-      }
-    );
+      });
+
+      console.log("Monitoring démarré");
+      resolve();
+    });
   }
 
-  parseTxt(txt) {
-    return txt.reduce((acc, item) => {
-      const [key, value] = item.toString().split("=");
-      acc[key] = value;
-      return acc;
-    }, {});
+  stop() {
+    if (this.bonjour) {
+      this.bonjour.destroy();
+    }
   }
 
   broadcastUpdate() {
-    this.io.emit("avahi-services", Array.from(this.services.values()));
+    const services = Array.from(this.services.values());
+    console.log("Services disponibles:", services);
+    this.io.emit("avahi-services", services);
   }
 }
 
-module.exports = AvahiMonitor;
+module.exports = ServiceMonitor;

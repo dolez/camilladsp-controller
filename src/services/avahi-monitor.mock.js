@@ -6,7 +6,7 @@ class AvahiMonitorMock {
     this.mockInterval = null;
   }
 
-  start() {
+  async start() {
     // Simulons quelques services initiaux
     this.addMockService("CamillaDSP-Main", "192.168.1.100", 5000);
     this.addMockService("CamillaDSP-Bedroom", "192.168.1.101", 5001);

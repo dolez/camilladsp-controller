@@ -18,7 +18,14 @@ app.use(express.static("dist"));
 
 // Monitor Avahi
 const avahiMonitor = new AvahiMonitor(io);
-avahiMonitor.start();
+avahiMonitor
+  .start()
+  .then(() => {
+    console.log("Monitoring démarré avec succès");
+  })
+  .catch((err) => {
+    console.error("Erreur lors du démarrage du monitoring:", err);
+  });
 
 // Gestion des connexions Socket.io
 io.on("connection", (socket) => {

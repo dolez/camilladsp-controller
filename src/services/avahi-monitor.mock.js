@@ -12,7 +12,7 @@ class AvahiMonitorMock {
     this.addMockService("CamillaDSP-Bedroom", "192.168.1.101", 5001);
 
     // Simuler des changements dynamiques
-    this.mockInterval = setInterval(() => {
+    /*  this.mockInterval = setInterval(() => {
       // Simuler l'apparition/disparition aléatoire de services
       if (Math.random() > 0.7) {
         this.addMockService(
@@ -21,7 +21,7 @@ class AvahiMonitorMock {
           5000 + Math.floor(Math.random() * 100)
         );
       }
-    }, 10000);
+    }, 10000); */
 
     this.broadcastUpdate();
   }

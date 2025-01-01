@@ -1,12 +1,11 @@
-import React, { useState, useCallback } from "react";
-import { RackUnit } from "../components/RackUnit";
-import { mockNodeMetrics } from "./mocks/useNodeMetrics.mock";
-import { MockContext } from "./mocks/MockContext";
+import React from "react";
+import { fn } from "@storybook/test";
+import { RackUnit } from "../components/Rack/RackUnit";
 
 // Configuration complète de test
 const defaultNode = {
-  address: "test-node",
-  name: "Test Node",
+  address: "192.168.1.100",
+  name: "Main Output",
   type: "playback",
   config: {
     filters: {
@@ -35,24 +34,6 @@ const defaultNode = {
           soft_clip: true,
         },
         type: "Limiter",
-      },
-      "Passe bas d'entrée": {
-        description: null,
-        parameters: {
-          freq: 800,
-          order: 2,
-          type: "ButterworthLowpass",
-        },
-        type: "BiquadCombo",
-      },
-      "Passe bas de sortie": {
-        description: null,
-        parameters: {
-          freq: 2000,
-          order: 2,
-          type: "ButterworthLowpass",
-        },
-        type: "BiquadCombo",
       },
     },
     mixers: {
@@ -95,15 +76,6 @@ const defaultNode = {
   },
 };
 
-const withMockMetrics = (metrics) => (Story) => {
-  const useNodeMetrics = () => metrics;
-  return (
-    <MockContext.Provider value={{ useNodeMetrics }}>
-      <Story />
-    </MockContext.Provider>
-  );
-};
-
 // Décorateur pour le container
 const withContainer = (Story) => (
   <div style={{ width: "800px", margin: "1rem" }}>
@@ -119,54 +91,24 @@ const meta = {
   },
   tags: ["autodocs"],
   decorators: [withContainer],
+  args: {
+    node: defaultNode,
+    onLink: fn(),
+    onUnlink: fn(),
+  },
 };
 
 export default meta;
 
-// Wrapper pour gérer l'état
-const InteractiveRackUnit = ({ node: initialNode, metrics }) => {
-  const [node, setNode] = useState(initialNode);
+// Story par défaut
+export const Default = {};
 
-  const handleConfigChange = useCallback((newConfig) => {
-    console.log("Config change in InteractiveRackUnit:", newConfig);
-    setNode((prev) => ({
-      ...prev,
-      config: newConfig,
-    }));
-  }, []);
-
-  return <RackUnit node={node} onConfigChange={handleConfigChange} />;
-};
-
-// Story par défaut avec état "Running"
-export const Running = {
-  render: () => (
-    <InteractiveRackUnit
-      node={defaultNode}
-      metrics={{ ...mockNodeMetrics, state: "Running" }}
-    />
-  ),
-  decorators: [withMockMetrics({ ...mockNodeMetrics, state: "Running" })],
-};
-
-// Story avec état "Paused"
-export const Paused = {
-  render: () => (
-    <InteractiveRackUnit
-      node={defaultNode}
-      metrics={{ ...mockNodeMetrics, state: "Paused" }}
-    />
-  ),
-  decorators: [withMockMetrics({ ...mockNodeMetrics, state: "Paused" })],
-};
-
-// Story avec état "Failed"
-export const Failed = {
-  render: () => (
-    <InteractiveRackUnit
-      node={defaultNode}
-      metrics={{ ...mockNodeMetrics, state: "Failed" }}
-    />
-  ),
-  decorators: [withMockMetrics({ ...mockNodeMetrics, state: "Failed" })],
+// Story avec état "Disconnected"
+export const Disconnected = {
+  args: {
+    node: {
+      ...defaultNode,
+      address: "192.168.1.200", // Adresse qui n'existe pas dans le mock
+    },
+  },
 };

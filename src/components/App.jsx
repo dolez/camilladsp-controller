@@ -1,4 +1,4 @@
-import CamillaRack from "./CamillaRack";
+import CamillaRack from "./Rack/CamillaRack";
 import { io } from "socket.io-client";
 
 const socket = io();

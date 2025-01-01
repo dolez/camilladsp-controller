@@ -1,5 +1,5 @@
-import React from "react";
-import { cn } from "../../lib/utils";
+import { h } from "preact";
+import { cn } from "../../../lib/utils";
 
 export function Knob({
   value,
@@ -14,7 +14,6 @@ export function Knob({
 }) {
   const handleChange = (e) => {
     const newValue = parseFloat(e.target.value);
-    console.log("Knob change:", { label, oldValue: value, newValue });
     onChange(newValue);
   };
 
@@ -35,7 +34,7 @@ export function Knob({
 
   return (
     <div className={cn("flex flex-col items-center gap-1", className)}>
-      <div className="text-xs text-zinc-400">{label}</div>
+      {label && <div className="text-xs text-zinc-400 h-4">{label}</div>}
       <div className={cn("relative", sizes[size])}>
         <input
           type="range"
@@ -57,6 +56,7 @@ export function Knob({
       </div>
       <div className="text-xs text-zinc-400 text-center">
         {value.toFixed(step < 1 ? 1 : 0)}
+        {unit && ` ${unit}`}
       </div>
     </div>
   );

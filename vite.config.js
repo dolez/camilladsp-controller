@@ -12,22 +12,10 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
-    // Ajout des optimisations
-    terserOptions: {
-      compress: {
-        passes: 2,
-      },
-    },
-    chunkSizeWarningLimit: 50, // en kB
+    chunkSizeWarningLimit: 50,
   },
   server: {
-    proxy: {
-      "/socket.io": {
-        target: "http://localhost:3000",
-        ws: true, // Important pour WebSocket
-        changeOrigin: true,
-      },
-    },
+    cors: true,
   },
   esbuild: {
     //drop: ["console", "debugger"],

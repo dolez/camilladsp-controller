@@ -1,5 +1,5 @@
-import React from "react";
-import { cn } from "../../lib/utils";
+import { h } from "preact";
+import { cn } from "../../../lib/utils";
 
 const LED_CONFIG = [
   { threshold: 0.0, color: "green" }, // LED 1 (bas)

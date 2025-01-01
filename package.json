@@ -4,16 +4,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node dev-server.js\"",
     "dev:local": "./scripts/dev-local.sh",
     "dev:pi": "./scripts/dev-sync.sh watch",
     "dev:pi:setup": "./scripts/dev-sync.sh setup",
-    "build": "NODE_ENV=production vite build",
+    "build": "vite build",
     "build:dev": "NODE_ENV=development vite build",
     "sync": "./scripts/dev-sync.sh sync",
     "server": "nodemon server.js",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook": "concurrently \"storybook dev -p 6006\" \"node dev-server.js\"",
+    "build-storybook": "storybook build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@preact/signals": "^2.0.0",
@@ -22,10 +24,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dbus-native": "^0.4.0",
-    "express": "^4.18.2",
+    "express": "^4.21.2",
     "lucide-preact": "^0.468.0",
     "lucide-react": "^0.468.0",
-    "socket.io": "^4.7.2",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.5.5"
   },
@@ -40,11 +42,19 @@
     "@storybook/preact-vite": "^8.4.7",
     "@storybook/test": "^8.4.7",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "msw": "^2.7.0",
+    "msw-storybook-addon": "^2.0.4",
     "nodemon": "^3.1.9",
     "postcss": "^8.4.49",
     "preact": "^10.19.0",
     "storybook": "^8.4.7",
     "tailwindcss": "^3.4.16",
     "vite": "^5.0.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

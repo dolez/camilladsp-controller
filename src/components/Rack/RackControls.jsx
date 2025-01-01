@@ -1,4 +1,4 @@
-import React from "react";
+import { h } from "preact";
 import { Knob } from "./controls/Knob";
 import { FileSelect } from "./controls/FileSelect";
 import { VuMeter } from "./controls/VuMeter";
@@ -14,14 +14,19 @@ function ControlFieldset({ legend, children, className }) {
   );
 }
 
-export function RackControls({ config, onConfigChange }) {
+export function RackControls({
+  config,
+  metrics,
+  onConfigChange,
+  onLink,
+  onUnlink,
+}) {
   if (!config?.filters) {
     console.warn("RackControls: config.filters is missing", config);
     return null;
   }
 
   const handleLimiterChange = (value) => {
-    console.log("Limiter change:", value);
     onConfigChange({
       ...config,
       filters: {
@@ -37,42 +42,7 @@ export function RackControls({ config, onConfigChange }) {
     });
   };
 
-  const handleInputLowPassChange = (value) => {
-    console.log("Input LP change:", value);
-    onConfigChange({
-      ...config,
-      filters: {
-        ...config.filters,
-        "Passe bas d'entrée": {
-          ...config.filters["Passe bas d'entrée"],
-          parameters: {
-            ...config.filters["Passe bas d'entrée"].parameters,
-            freq: value,
-          },
-        },
-      },
-    });
-  };
-
-  const handleOutputLowPassChange = (value) => {
-    console.log("Output LP change:", value);
-    onConfigChange({
-      ...config,
-      filters: {
-        ...config.filters,
-        "Passe bas de sortie": {
-          ...config.filters["Passe bas de sortie"],
-          parameters: {
-            ...config.filters["Passe bas de sortie"].parameters,
-            freq: value,
-          },
-        },
-      },
-    });
-  };
-
   const handleDelayChange = (value) => {
-    console.log("Delay change:", value);
     onConfigChange({
       ...config,
       filters: {
@@ -89,7 +59,6 @@ export function RackControls({ config, onConfigChange }) {
   };
 
   const handleConvFileChange = (value) => {
-    console.log("Conv file change:", value);
     onConfigChange({
       ...config,
       filters: {
@@ -124,26 +93,8 @@ export function RackControls({ config, onConfigChange }) {
     });
   };
 
-  const handleMuteChange = (checked) => {
-    onConfigChange({
-      ...config,
-      mixers: {
-        ...config.mixers,
-        "Unnamed Mixer 1": {
-          ...config.mixers["Unnamed Mixer 1"],
-          mapping: config.mixers["Unnamed Mixer 1"].mapping.map((channel) => ({
-            ...channel,
-            mute: checked,
-          })),
-        },
-      },
-    });
-  };
-
   const currentGain =
     config.mixers?.["Unnamed Mixer 1"]?.mapping?.[0]?.sources?.[0]?.gain ?? 0;
-  const isMuted =
-    config.mixers?.["Unnamed Mixer 1"]?.mapping?.[0]?.mute ?? false;
 
   return (
     <div className="flex flex-wrap gap-4 p-4">
@@ -151,23 +102,9 @@ export function RackControls({ config, onConfigChange }) {
         <div className="flex flex-col gap-1">
           <div className="text-xs text-zinc-400 h-4 invisible">Level</div>
           <div className="flex items-end gap-1 pb-1">
-            <VuMeter value={-28} />
-            <VuMeter value={-25} />
+            <VuMeter value={metrics?.captureLevel ?? -60} />
           </div>
         </div>
-      </ControlFieldset>
-
-      <ControlFieldset legend="Input LP">
-        <Knob
-          label="Freq"
-          value={config.filters["Passe bas d'entrée"].parameters.freq}
-          onChange={handleInputLowPassChange}
-          min={20}
-          max={20000}
-          step={1}
-          unit="Hz"
-          size="sm"
-        />
       </ControlFieldset>
 
       <ControlFieldset legend="Limiter">
@@ -204,19 +141,6 @@ export function RackControls({ config, onConfigChange }) {
         />
       </ControlFieldset>
 
-      <ControlFieldset legend="Output LP">
-        <Knob
-          label="Freq"
-          value={config.filters["Passe bas de sortie"].parameters.freq}
-          onChange={handleOutputLowPassChange}
-          min={20}
-          max={20000}
-          step={1}
-          unit="Hz"
-          size="sm"
-        />
-      </ControlFieldset>
-
       <ControlFieldset legend="Output" className="ml-auto">
         <div className="flex items-end gap-4">
           <Knob
@@ -230,8 +154,7 @@ export function RackControls({ config, onConfigChange }) {
             size="sm"
           />
           <div className="flex gap-1 pb-1">
-            <VuMeter value={-35} />
-            <VuMeter value={-32} />
+            <VuMeter value={metrics?.playbackLevel ?? -60} />
           </div>
         </div>
       </ControlFieldset>

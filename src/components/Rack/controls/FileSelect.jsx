@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import { cn } from "../../lib/utils";
-import { Button } from "../ui/Button";
+import { h } from "preact";
+import { useState, useEffect, useRef } from "preact/hooks";
+import { cn } from "../../../lib/utils";
+import { Button } from "../../ui/Button";
 import { FileIcon } from "lucide-react";
 
 export function FileSelect({ value, onChange, label, className }) {
@@ -10,10 +11,8 @@ export function FileSelect({ value, onChange, label, className }) {
 
   const handleClick = () => {
     // Simulation d'une sélection de fichier
-    console.log("FileSelect click:", { label, currentValue: value });
     const newValue = prompt("Entrer le chemin du fichier:", value);
     if (newValue && newValue !== value) {
-      console.log("FileSelect change:", { oldValue: value, newValue });
       onChange(newValue);
     }
   };
@@ -59,7 +58,7 @@ export function FileSelect({ value, onChange, label, className }) {
           {value?.split("/").pop() || "Aucun fichier"}
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         @keyframes scroll {
           from {
             transform: translateX(0);

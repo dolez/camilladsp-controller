@@ -1,5 +1,5 @@
 import React from "react";
-import { CamillaController } from "../components/CamillaRack";
+import CamillaRack from "../components/CamillaRack";
 import { mockNodeMetrics } from "./mocks/useNodeMetrics.mock";
 import { MockContext } from "./mocks/MockContext";
 
@@ -200,8 +200,8 @@ const withMockMetrics = (Story) => {
 };
 
 const meta = {
-  title: "App/CamillaController",
-  component: CamillaController,
+  title: "App/CamillaRack",
+  component: CamillaRack,
   parameters: {
     layout: "fullscreen",
   },

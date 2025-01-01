@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "concurrently \"vite\" \"node dev-server.js\"",
+    "dev": "kill-port 3000 5173 && concurrently --kill-others \"vite\" \"nodemon server.js\"",
+    "dev:mock": "kill-port 3000 5173 && concurrently --kill-others \"vite\" \"node dev-server.js\"",
     "dev:local": "./scripts/dev-local.sh",
     "dev:pi": "./scripts/dev-sync.sh watch",
     "dev:pi:setup": "./scripts/dev-sync.sh setup",
@@ -12,7 +13,8 @@
     "build:dev": "NODE_ENV=development vite build",
     "sync": "./scripts/dev-sync.sh sync",
     "server": "nodemon server.js",
-    "storybook": "concurrently \"storybook dev -p 6006\" \"node dev-server.js\"",
+    "mock:nodes": "kill-port 5000 5001 && node src/services/camilla/mock-nodes.js",
+    "storybook": "kill-port 3000 6006 && concurrently --kill-others \"storybook dev -p 6006\" \"node dev-server.js\"",
     "build-storybook": "storybook build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
@@ -43,6 +45,7 @@
     "@storybook/test": "^8.4.7",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
+    "kill-port": "^2.0.1",
     "msw": "^2.7.0",
     "msw-storybook-addon": "^2.0.4",
     "nodemon": "^3.1.9",

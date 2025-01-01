@@ -9,8 +9,8 @@ export const camillaState = signal({
 });
 
 class CamillaConnection {
-  constructor(address) {
-    this.address = address;
+  constructor(node) {
+    this.node = node;
     this.socket = null;
     this.connected = false;
     this.metricsInterval = null;
@@ -18,9 +18,16 @@ class CamillaConnection {
 
   connect() {
     try {
-      // En développement, on se connecte directement au mock server
-      const isDev = process.env.NODE_ENV === "development";
-      const url = isDev ? "ws://localhost:5000" : `http://${this.address}:5000`;
+      // En développement, on ne se connecte pas réellement aux instances
+      if (process.env.NODE_ENV === "development") {
+        this.connected = true;
+        console.log(
+          `Mock connection to CamillaDSP at ${this.node.address}:${this.node.port}`
+        );
+        return;
+      }
+
+      const url = `http://${this.node.address}:${this.node.port}`;
 
       this.socket = io(url, {
         transports: ["websocket"],
@@ -48,21 +55,25 @@ class CamillaConnection {
 
       this.socket.on("connect", () => {
         this.connected = true;
-        console.log(`Connected to CamillaDSP at ${this.address}`);
+        console.log(
+          `Connected to CamillaDSP at ${this.node.address}:${this.node.port}`
+        );
         this.startMetricsPolling();
       });
 
       this.socket.on("disconnect", () => {
         this.connected = false;
         this.stopMetricsPolling();
-        console.log(`Disconnected from CamillaDSP at ${this.address}`);
+        console.log(
+          `Disconnected from CamillaDSP at ${this.node.address}:${this.node.port}`
+        );
       });
 
       // Écoute des mises à jour de métriques
       this.socket.on("metrics", (data) => {
         const currentState = camillaState.value;
         const updatedMetrics = new Map(currentState.nodeMetrics);
-        updatedMetrics.set(this.address, data);
+        updatedMetrics.set(this.node.address, data);
 
         camillaState.value = {
           ...currentState,
@@ -74,10 +85,10 @@ class CamillaConnection {
       this.socket.on("config", (config) => {
         const currentState = camillaState.value;
         const updatedNodes = new Map(currentState.nodes);
-        const node = updatedNodes.get(this.address);
+        const node = updatedNodes.get(this.node.address);
         if (node) {
           node.config = config;
-          updatedNodes.set(this.address, node);
+          updatedNodes.set(this.node.address, node);
           camillaState.value = {
             ...currentState,
             nodes: updatedNodes,
@@ -85,7 +96,10 @@ class CamillaConnection {
         }
       });
     } catch (err) {
-      console.error(`Failed to connect to ${this.address}:`, err);
+      console.error(
+        `Failed to connect to ${this.node.address}:${this.node.port}:`,
+        err
+      );
     }
   }
 
@@ -95,9 +109,12 @@ class CamillaConnection {
       this.socket.disconnect();
       this.socket = null;
     }
+    this.connected = false;
   }
 
   startMetricsPolling() {
+    if (process.env.NODE_ENV === "development") return;
+
     this.metricsInterval = setInterval(() => {
       if (this.connected) {
         this.socket.emit("getmetrics");
@@ -148,22 +165,56 @@ class CamillaConnection {
 
 export class CamillaManager {
   constructor() {
-    this.connections = new Map(); // Map<string, CamillaConnection>
+    this.connections = new Map(); // Map<nodeId, CamillaConnection>
+    this.setupMainSocket();
+  }
+
+  setupMainSocket() {
+    // Socket.io client pour le serveur principal
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : window.location.origin;
+
+    this.mainSocket = io(url, {
+      transports: ["websocket"],
+      upgrade: false,
+    });
+
+    this.mainSocket.on("avahi-services", (services) => {
+      console.log("Received services:", services);
+      this.updateNodes(services);
+    });
+
+    this.mainSocket.on("connect", () => {
+      console.log("Connected to main server");
+    });
+
+    this.mainSocket.on("connect_error", (error) => {
+      console.error("Main server connection error:", error);
+    });
+  }
+
+  // Helper pour générer un ID unique pour un nœud
+  getNodeId(node) {
+    return `${node.address}:${node.port}`;
   }
 
   initializeNode(node) {
-    if (!this.connections.has(node.address)) {
-      const connection = new CamillaConnection(node.address);
-      this.connections.set(node.address, connection);
+    const nodeId = this.getNodeId(node);
+    if (!this.connections.has(nodeId)) {
+      const connection = new CamillaConnection(node);
+      this.connections.set(nodeId, connection);
       connection.connect();
     }
   }
 
-  removeNode(address) {
-    const connection = this.connections.get(address);
+  removeNode(node) {
+    const nodeId = this.getNodeId(node);
+    const connection = this.connections.get(nodeId);
     if (connection) {
       connection.disconnect();
-      this.connections.delete(address);
+      this.connections.delete(nodeId);
     }
   }
 
@@ -174,10 +225,11 @@ export class CamillaManager {
 
   updateNodes(services) {
     // Supprime les connexions pour les nœuds qui n'existent plus
-    const currentAddresses = new Set(services.map((s) => s.address));
-    this.connections.forEach((_, address) => {
-      if (!currentAddresses.has(address)) {
-        this.removeNode(address);
+    const currentNodeIds = new Set(services.map((s) => this.getNodeId(s)));
+    this.connections.forEach((_, nodeId) => {
+      if (!currentNodeIds.has(nodeId)) {
+        const [address, port] = nodeId.split(":");
+        this.removeNode({ address, port: parseInt(port, 10) });
       }
     });
 
@@ -187,14 +239,14 @@ export class CamillaManager {
     // Met à jour l'état global
     camillaState.value = {
       ...camillaState.value,
-      nodes: new Map(services.map((node) => [node.address, node])),
+      nodes: new Map(services.map((node) => [this.getNodeId(node), node])),
     };
   }
 
   // Méthodes utilitaires pour les commandes groupées
   setConfigValueForNodes(nodes, path, value) {
     nodes.forEach((node) => {
-      const connection = this.connections.get(node.address);
+      const connection = this.connections.get(this.getNodeId(node));
       if (connection) {
         connection.setConfigValue(path, value);
       }

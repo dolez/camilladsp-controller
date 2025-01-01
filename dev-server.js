@@ -1,7 +1,7 @@
 const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const AvahiMonitorMock = require("./src/services/discovery/avahi-monitor.mock");
+const AvahiMonitorMock = require("./src/services/discovery/DiscoveryService.mock");
 const CamillaServerMock = require("./src/services/camilla/camilla-server.mock");
 
 const app = express();
@@ -34,6 +34,10 @@ app.use((req, res, next) => {
 const avahiMonitor = new AvahiMonitorMock(io);
 const camillaServer = new CamillaServerMock(io);
 
+// Démarre les services mock
+avahiMonitor.start().catch(console.error);
+camillaServer.start().catch(console.error);
+
 let isShuttingDown = false;
 
 // Gestion propre de l'arrêt
@@ -65,12 +69,8 @@ process.on("uncaughtException", (error) => {
   cleanup("uncaughtException").finally(() => process.exit(1));
 });
 
-// Démarre les services
-avahiMonitor.start();
-camillaServer.start();
-
 // Démarre le serveur
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Gestion des erreurs de démarrage
 httpServer.on("error", (error) => {

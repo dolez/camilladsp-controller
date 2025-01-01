@@ -2,12 +2,13 @@ const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const { camillaManager } = require("./src/services/camilla/CamillaClient");
 
 // Choisir l'implémentation selon l'environnement
 const AvahiMonitor =
   process.env.NODE_ENV === "production"
-    ? require("./src/services/avahi-monitor")
-    : require("./src/services/avahi-monitor.mock");
+    ? require("./src/services/discovery/DiscoveryService")
+    : require("./src/services/discovery/DiscoveryService.mock");
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,7 +33,10 @@ io.on("connection", (socket) => {
   console.log("Client connecté");
 
   // Envoyer l'état actuel au nouveau client
-  socket.emit("avahi-services", Array.from(avahiMonitor.services.values()));
+  const services = Array.from(avahiMonitor.services.values());
+  socket.emit("avahi-services", services);
+  // Mettre à jour le CamillaManager avec les services découverts
+  camillaManager.updateNodes(services);
 
   socket.on("disconnect", () => {
     console.log("Client déconnecté");

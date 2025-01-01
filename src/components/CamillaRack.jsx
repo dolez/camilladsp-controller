@@ -29,7 +29,7 @@ const CamillaRack = ({ socket }) => {
   return (
     <div className="p-6 space-y-6 bg-black text-white min-h-screen">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">CamillaDSP Rack</h1>
+        <h1 className="text-2xl font-bold">My favorite hall</h1>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm">Global Mode</span>
@@ -44,8 +44,8 @@ const CamillaRack = ({ socket }) => {
       {camillaState.value.nodes.length === 0 ? (
         <Alert>
           <AlertDescription>
-            No CamillaDSP nodes found. Make sure the nodes are running and
-            broadcasting via Bonjour/Avahi.
+            No MFA nodes found. Make sure the nodes are running and broadcasting
+            via Bonjour/Avahi.
           </AlertDescription>
         </Alert>
       ) : (

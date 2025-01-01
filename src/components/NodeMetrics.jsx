@@ -1,10 +1,10 @@
 import { CardTitle } from "./ui/Card";
 import { Badge } from "./ui/Badge";
 import { cn } from "../lib/utils";
-import { camillaState, camillaManager } from "./camilla-websocket.js";
+import { useNodeMetrics } from "../hooks/useNodeMetrics";
 
 export function NodeMetrics({ node }) {
-  const metrics = camillaState.value.nodeMetrics.get(node.address) || {};
+  const metrics = useNodeMetrics(node);
 
   const getStateColor = (state) => {
     switch (state) {
@@ -31,11 +31,6 @@ export function NodeMetrics({ node }) {
           )}
         >
           {metrics.state}
-        </Badge>
-      )}
-      {metrics.captureRate && (
-        <Badge variant="secondary" className="text-xs">
-          {metrics.captureRate} Hz
         </Badge>
       )}
     </div>

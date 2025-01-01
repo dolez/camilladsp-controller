@@ -1,8 +1,8 @@
-import CamillaController from "./CamillaController";
+import CamillaRack from "./CamillaRack";
 import { io } from "socket.io-client";
 
 const socket = io();
 
 export function App() {
-  return <CamillaController socket={socket} />;
+  return <CamillaRack socket={socket} />;
 }

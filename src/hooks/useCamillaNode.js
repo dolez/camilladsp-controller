@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "preact/hooks";
 import { signal } from "@preact/signals";
 import { CamillaClient } from "../services/camilla/CamillaClient";
 import { camillaState, getNodeId } from "../services/camilla/CamillaContext";
@@ -40,49 +46,64 @@ export const createNodeState = () =>
   });
 
 export function useCamillaNode(address, port) {
+  const nodeId = `${address}:${port}`;
+
+  // Référence au client pour pouvoir l'utiliser dans les callbacks
   const clientRef = useRef(null);
-  const nodeState = useRef(createNodeState()).current;
-  const nodeId = getNodeId(address, port);
 
-  // Mettre à jour l'état local et global
-  const updateState = (newState) => {
-    nodeState.value = {
-      ...nodeState.value,
-      ...newState,
+  // Crée un état local pour ce nœud s'il n'existe pas déjà
+  if (!camillaState.value.nodeStates.has(nodeId)) {
+    camillaState.value = {
+      ...camillaState.value,
+      nodeStates: new Map(camillaState.value.nodeStates).set(nodeId, {
+        config: null,
+        metrics: null,
+        connected: false,
+        convolutionFiles: [],
+      }),
     };
+  }
 
+  // État local pour ce nœud
+  const nodeState = useMemo(
+    () => camillaState.value.nodeStates.get(nodeId),
+    [camillaState.value.nodeStates, nodeId]
+  );
+
+  // Met à jour l'état local du nœud
+  const updateState = (update) => {
     const currentState = camillaState.value;
-    const updatedNodeStates = new Map(currentState.nodeStates);
-    updatedNodeStates.set(nodeId, nodeState.value);
+    const nodeStates = new Map(currentState.nodeStates);
+    const currentNodeState = nodeStates.get(nodeId);
+
+    nodeStates.set(nodeId, {
+      ...currentNodeState,
+      ...update,
+    });
 
     camillaState.value = {
       ...currentState,
-      nodeStates: updatedNodeStates,
+      nodeStates,
     };
   };
 
-  // Crée une version debounced de setConfig avec un délai de 200ms (5Hz)
-  const debouncedSetConfig = useRef(
+  // Debounce la mise à jour de la config pour éviter les appels trop fréquents
+  const debouncedSetConfig = useCallback(
     debounce((config) => {
       clientRef.current?.setConfig(config);
-    }, 200)
-  ).current;
+    }, 100),
+    []
+  );
 
-  // Charge la liste des fichiers de convolution
   const loadConvolutionFiles = async () => {
     try {
       const response = await fetch(`/api/files/${nodeId}`);
-      if (response.ok) {
-        const files = await response.json();
-        updateState({
-          convolutionFiles: files,
-        });
-      }
+      if (!response.ok) throw new Error("Failed to fetch files");
+      const files = await response.json();
+      updateState({ convolutionFiles: files });
     } catch (error) {
-      console.error(
-        "Erreur lors du chargement des fichiers de convolution:",
-        error
-      );
+      console.error("Error loading convolution files:", error);
+      updateState({ convolutionFiles: [] });
     }
   };
 
@@ -100,6 +121,13 @@ export function useCamillaNode(address, port) {
       updateState({
         config,
         connected: true,
+      });
+    };
+
+    client.onDisconnect = () => {
+      updateState({
+        connected: false,
+        metrics: null,
       });
     };
 
@@ -124,11 +152,10 @@ export function useCamillaNode(address, port) {
 
   // Fonctions utilitaires avec mise à jour optimiste
   const setFilterParam = (filterName, paramName, value) => {
-    const currentConfig = nodeState.value.config;
-    if (!currentConfig) return;
+    if (!nodeState?.config) return;
 
     // Mise à jour optimiste immédiate
-    const newConfig = { ...currentConfig };
+    const newConfig = { ...nodeState.config };
     if (newConfig.filters?.[filterName]?.parameters) {
       newConfig.filters[filterName].parameters[paramName] = value;
       updateState({
@@ -141,14 +168,13 @@ export function useCamillaNode(address, port) {
   };
 
   const duplicateFiltersForStereo = () => {
-    const currentConfig = nodeState.value.config;
-    if (!currentConfig) return;
+    if (!nodeState?.config) return;
 
-    const newConfig = { ...currentConfig };
+    const newConfig = { ...nodeState.config };
     const newPipeline = [];
 
     // Pour chaque filtre dans le pipeline
-    currentConfig.pipeline.forEach((step) => {
+    nodeState.config.pipeline.forEach((step) => {
       if (step.type === "Filter") {
         // Ajoute le filtre pour le canal gauche (0)
         newPipeline.push({
@@ -181,11 +207,10 @@ export function useCamillaNode(address, port) {
   };
 
   const setMixerGain = (mixerName, destIndex, sourceIndex, gain) => {
-    const currentConfig = nodeState.value.config;
-    if (!currentConfig) return;
+    if (!nodeState?.config) return;
 
     // Mise à jour optimiste
-    const newConfig = { ...currentConfig };
+    const newConfig = { ...nodeState.config };
     if (newConfig.mixers?.[mixerName]?.mapping) {
       newConfig.mixers[mixerName].mapping[destIndex].sources[sourceIndex].gain =
         gain;
@@ -199,11 +224,10 @@ export function useCamillaNode(address, port) {
   };
 
   const setFilterBypass = (pipelineIndex, bypassed) => {
-    const currentConfig = nodeState.value.config;
-    if (!currentConfig) return;
+    if (!nodeState?.config) return;
 
     // Mise à jour optimiste
-    const newConfig = { ...currentConfig };
+    const newConfig = { ...nodeState.config };
     if (newConfig.pipeline?.[pipelineIndex]) {
       newConfig.pipeline[pipelineIndex].bypassed = bypassed;
       updateState({
@@ -216,7 +240,7 @@ export function useCamillaNode(address, port) {
   };
 
   return {
-    state: nodeState.value,
+    state: nodeState,
     nodeId,
     setFilterParam,
     setMixerGain,

@@ -16,6 +16,7 @@ export class CamillaClient {
       captureRate: 0,
       captureLevel: -100,
     };
+    this.onDisconnect = null;
   }
 
   connect() {
@@ -39,6 +40,7 @@ export class CamillaClient {
         console.log(
           `Disconnected from CamillaDSP at ${this.address}:${this.port}`
         );
+        this.onDisconnect?.();
       };
 
       this.socket.onerror = (error) => {

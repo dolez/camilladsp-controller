@@ -34,7 +34,8 @@ export function RackUnit({ node, globalMode, onSelect }) {
   }, [node.address]);
 
   const updateConfig = (path, value) => {
-    setFilterParam(path, value);
+    const [filterName, paramName] = path.split(".");
+    setFilterParam(filterName, paramName, value);
   };
 
   return (

@@ -27,51 +27,23 @@ export function RackControls({
   }
 
   const handleLimiterChange = (value) => {
-    onConfigChange({
-      ...config,
-      filters: {
-        ...config.filters,
-        Limiteur: {
-          ...config.filters.Limiteur,
-          parameters: {
-            ...config.filters.Limiteur.parameters,
-            clip_limit: value,
-          },
-        },
-      },
-    });
+    onConfigChange("Limiteur.clip_limit", value);
   };
 
   const handleDelayChange = (value) => {
-    onConfigChange({
-      ...config,
-      filters: {
-        ...config.filters,
-        Delai: {
-          ...config.filters.Delai,
-          parameters: {
-            ...config.filters.Delai.parameters,
-            delay: value,
-          },
-        },
-      },
-    });
+    onConfigChange("Delai.delay", value);
   };
 
   const handleConvFileChange = (value) => {
-    onConfigChange({
-      ...config,
-      filters: {
-        ...config.filters,
-        Convolution: {
-          ...config.filters.Convolution,
-          parameters: {
-            ...config.filters.Convolution.parameters,
-            filename: value,
-          },
-        },
-      },
-    });
+    onConfigChange("Convolution.filename", value);
+  };
+
+  const handlePasseBasEntreeChange = (value) => {
+    onConfigChange("Passe bas d'entrée.freq", value);
+  };
+
+  const handlePasseBasSortieChange = (value) => {
+    onConfigChange("Passe bas de sortie.freq", value);
   };
 
   const handleGainChange = (value) => {
@@ -124,7 +96,7 @@ export function RackControls({
         <Knob
           label="Freq"
           value={config.filters["Passe bas d'entrée"].parameters.freq}
-          onChange={handleLimiterChange}
+          onChange={handlePasseBasEntreeChange}
           min={20}
           max={20000}
           step={1}
@@ -157,7 +129,7 @@ export function RackControls({
         <Knob
           label="Freq"
           value={config.filters["Passe bas de sortie"].parameters.freq}
-          onChange={handleLimiterChange}
+          onChange={handlePasseBasSortieChange}
           min={20}
           max={20000}
           step={1}

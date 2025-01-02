@@ -8,12 +8,20 @@ const AvahiMonitor =
     ? require("./src/services/discovery/DiscoveryService")
     : require("./src/services/discovery/DiscoveryService.mock");
 
+const filesRouter = require("./src/server/routes/files");
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
+// Middleware pour parser le JSON
+app.use(express.json());
+
 // Middleware statique pour les fichiers de production
 app.use(express.static("dist"));
+
+// Routes API pour la gestion des fichiers
+app.use("/api", filesRouter);
 
 // Monitor Avahi
 const avahiMonitor = new AvahiMonitor(io);

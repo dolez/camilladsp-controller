@@ -16,6 +16,16 @@ export default defineConfig({
   },
   server: {
     cors: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+      "/socket.io": {
+        target: "http://localhost:3000",
+        ws: true,
+      },
+    },
   },
   esbuild: {
     //drop: ["console", "debugger"],

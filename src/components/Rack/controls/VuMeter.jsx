@@ -10,7 +10,7 @@ const LED_CONFIG = [
   { threshold: 0.9, color: "red" }, // LED 6 (haut)
 ];
 
-export function VuMeter({ value = -60, min = -60, max = 0, className }) {
+function SingleVuMeter({ value = -60, min = -60, max = 0, className }) {
   // Normalise la valeur entre 0 et 1
   const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
@@ -45,6 +45,35 @@ export function VuMeter({ value = -60, min = -60, max = 0, className }) {
           />
         );
       })}
+    </div>
+  );
+}
+
+export function VuMeter({
+  values = [-60, -60],
+  min = -60,
+  max = 0,
+  className,
+}) {
+  // Si une seule valeur est fournie, la dupliquer pour le stéréo
+  const [leftValue, rightValue] = Array.isArray(values)
+    ? values
+    : [values, values];
+
+  return (
+    <div className="flex gap-1">
+      <SingleVuMeter
+        value={leftValue}
+        min={min}
+        max={max}
+        className={className}
+      />
+      <SingleVuMeter
+        value={rightValue}
+        min={min}
+        max={max}
+        className={className}
+      />
     </div>
   );
 }

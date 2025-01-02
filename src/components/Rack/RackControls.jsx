@@ -1,6 +1,6 @@
 import { h } from "preact";
 import { Knob } from "./controls/Knob";
-import { FileSelect } from "./controls/FileSelect";
+import { ConvolutionFileSelect } from "./controls/ConvolutionFileSelect";
 import { VuMeter } from "./controls/VuMeter";
 
 function ControlFieldset({ legend, children, className }) {
@@ -20,6 +20,9 @@ export function RackControls({
   onConfigChange,
   onLink,
   onUnlink,
+  node,
+  state,
+  loadConvolutionFiles,
 }) {
   if (!config?.filters) {
     console.warn("RackControls: config.filters is missing", config);
@@ -59,7 +62,7 @@ export function RackControls({
         <div className="flex flex-col gap-1">
           <div className="text-xs text-zinc-400 h-4 invisible">Level</div>
           <div className="flex items-end gap-1 pb-1">
-            <VuMeter value={metrics?.captureLevel ?? -60} />
+            <VuMeter values={metrics?.captureRms ?? [-60, -60]} />
           </div>
         </div>
       </ControlFieldset>
@@ -104,12 +107,16 @@ export function RackControls({
       </ControlFieldset>
 
       <ControlFieldset legend="Convolution">
-        <FileSelect
+        <ConvolutionFileSelect
           label="IR File"
           value={config.filters.Convolution.parameters.filename}
           onChange={handleConvFileChange}
+          node={node}
+          files={state.convolutionFiles}
+          onUploadSuccess={loadConvolutionFiles}
         />
       </ControlFieldset>
+
       <ControlFieldset legend="Passe bas sortie">
         <Knob
           label="Freq"
@@ -122,6 +129,7 @@ export function RackControls({
           size="sm"
         />
       </ControlFieldset>
+
       <ControlFieldset legend="Output" className="ml-auto">
         <div className="flex items-end gap-4">
           <Knob
@@ -135,7 +143,7 @@ export function RackControls({
             size="sm"
           />
           <div className="flex gap-1 pb-1">
-            <VuMeter value={metrics?.playbackLevel ?? -60} />
+            <VuMeter values={metrics?.playbackRms ?? [-60, -60]} />
           </div>
         </div>
       </ControlFieldset>

@@ -6,8 +6,14 @@ import { RackControls } from "./RackControls";
 import { useCamillaNode } from "../../hooks/useCamillaNode";
 
 export function RackUnit({ node, globalMode, onSelect }) {
-  const { state, setFilterParam, setMixerGain, setFilterBypass, setConfig } =
-    useCamillaNode(node.address, node.port);
+  const {
+    state,
+    setFilterParam,
+    setMixerGain,
+    setFilterBypass,
+    setConfig,
+    loadConvolutionFiles,
+  } = useCamillaNode(node.address, node.port);
 
   const { config, metrics, connected: isConnected } = state;
 
@@ -73,6 +79,9 @@ export function RackUnit({ node, globalMode, onSelect }) {
           onConfigChange={updateConfig}
           setMixerGain={setMixerGain}
           setFilterBypass={setFilterBypass}
+          node={node}
+          state={state}
+          loadConvolutionFiles={loadConvolutionFiles}
         />
       </CardContent>
     </Card>

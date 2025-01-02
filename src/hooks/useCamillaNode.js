@@ -36,6 +36,7 @@ export const createNodeState = () =>
       captureLevel: -100,
     },
     connected: false,
+    convolutionFiles: [],
   });
 
 export function useCamillaNode(address, port) {
@@ -67,6 +68,24 @@ export function useCamillaNode(address, port) {
     }, 200)
   ).current;
 
+  // Charge la liste des fichiers de convolution
+  const loadConvolutionFiles = async () => {
+    try {
+      const response = await fetch(`/api/files/${nodeId}`);
+      if (response.ok) {
+        const files = await response.json();
+        updateState({
+          convolutionFiles: files,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des fichiers de convolution:",
+        error
+      );
+    }
+  };
+
   useEffect(() => {
     const client = new CamillaClient(address, port);
     clientRef.current = client;
@@ -85,6 +104,7 @@ export function useCamillaNode(address, port) {
     };
 
     client.connect();
+    loadConvolutionFiles();
 
     return () => {
       client.disconnect();
@@ -118,6 +138,36 @@ export function useCamillaNode(address, port) {
 
     // Envoi au serveur debounced
     debouncedSetConfig(newConfig);
+  };
+
+  const duplicateFiltersForStereo = () => {
+    const currentConfig = nodeState.value.config;
+    if (!currentConfig) return;
+
+    const newConfig = { ...currentConfig };
+    const newPipeline = [];
+
+    // Pour chaque filtre dans le pipeline
+    currentConfig.pipeline.forEach((step) => {
+      if (step.type === "Filter") {
+        // Ajoute le filtre pour le canal gauche (0)
+        newPipeline.push({
+          ...step,
+          channel: 0,
+        });
+        // Ajoute le filtre pour le canal droit (1)
+        newPipeline.push({
+          ...step,
+          channel: 1,
+        });
+      } else {
+        // Conserve les autres étapes (comme le mixer) telles quelles
+        newPipeline.push(step);
+      }
+    });
+
+    newConfig.pipeline = newPipeline;
+    setConfig(newConfig);
   };
 
   const setConfig = (config) => {
@@ -172,5 +222,7 @@ export function useCamillaNode(address, port) {
     setMixerGain,
     setFilterBypass,
     setConfig,
+    loadConvolutionFiles,
+    duplicateFiltersForStereo,
   };
 }

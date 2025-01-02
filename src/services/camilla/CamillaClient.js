@@ -29,7 +29,7 @@ export class CamillaClient {
         this.connected = true;
         console.log(`Connected to CamillaDSP at ${this.address}:${this.port}`);
         this.startConfigPolling();
-        //this.startMetricsPolling();
+        this.startMetricsPolling();
       };
 
       this.socket.onclose = () => {

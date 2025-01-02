@@ -4,26 +4,23 @@ import { Card, CardHeader, CardContent } from "../ui/Card";
 import { NodeHeader } from "./NodeHeader";
 import { RackControls } from "./RackControls";
 import { useCamillaNode } from "../../hooks/useCamillaNode";
+import { getNodeId } from "../../services/camilla/CamillaContext";
 
-export function RackUnit({ node, onLink, onUnlink }) {
-  const {
-    config,
-    metrics,
-    isConnected,
-    isProcessing,
-    updateConfig,
-    toggleProcessing,
-  } = useCamillaNode(node.address);
+export function RackUnit({ node, globalMode, onSelect }) {
+  const { state, setFilterParam, setMixerGain, setFilterBypass } =
+    useCamillaNode(node.address, node.port);
+
+  const { config, metrics, connected: isConnected } = state;
 
   useEffect(() => {
     const handleGlobalCommand = (event) => {
       if (event.detail.nodeAddress === node.address) {
         switch (event.detail.command) {
           case "start":
-            if (!isProcessing) toggleProcessing();
+            // Adapter ces actions aux nouvelles méthodes si nécessaire
             break;
           case "stop":
-            if (isProcessing) toggleProcessing();
+            // Adapter ces actions aux nouvelles méthodes si nécessaire
             break;
           default:
             console.warn("Unknown command:", event.detail.command);
@@ -34,7 +31,11 @@ export function RackUnit({ node, onLink, onUnlink }) {
     window.addEventListener("globalCommand", handleGlobalCommand);
     return () =>
       window.removeEventListener("globalCommand", handleGlobalCommand);
-  }, [node.address, isProcessing, toggleProcessing]);
+  }, [node.address]);
+
+  const updateConfig = (path, value) => {
+    setFilterParam(path, value);
+  };
 
   return (
     <Card className="bg-zinc-900 border-zinc-700">
@@ -43,8 +44,7 @@ export function RackUnit({ node, onLink, onUnlink }) {
           node={node}
           metrics={metrics}
           isConnected={isConnected}
-          isProcessing={isProcessing}
-          onToggleProcessing={toggleProcessing}
+          onSelect={onSelect}
         />
       </CardHeader>
       <CardContent className="p-0">
@@ -52,8 +52,8 @@ export function RackUnit({ node, onLink, onUnlink }) {
           config={config}
           metrics={metrics}
           onConfigChange={updateConfig}
-          onLink={onLink}
-          onUnlink={onUnlink}
+          setMixerGain={setMixerGain}
+          setFilterBypass={setFilterBypass}
         />
       </CardContent>
     </Card>

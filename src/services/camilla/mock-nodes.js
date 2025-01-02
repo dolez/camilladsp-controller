@@ -21,29 +21,50 @@ function createMockServer(port, name) {
     config: `${name.toLowerCase()}.yml`,
   });
 
-  camillaServer.start().catch(console.error);
-
-  httpServer.listen(port, () => {
-    console.log(`Mock CamillaDSP ${name} démarré sur le port ${port}`);
+  // Ajout d'une gestion d'erreur plus détaillée
+  camillaServer.start().catch((error) => {
+    console.error(`Erreur lors du démarrage du serveur ${name}:`, error);
   });
 
-  return { httpServer, camillaServer };
-}
+  // Ajout d'une promesse pour le démarrage du serveur HTTP
+  return new Promise((resolve, reject) => {
+    httpServer.listen(port, () => {
+      console.log(`Mock CamillaDSP ${name} démarré sur le port ${port}`);
+      resolve({ httpServer, camillaServer });
+    });
 
-// Crée deux instances de CamillaDSP mock
-const servers = [
-  createMockServer(5000, "CamillaDSP-Main"),
-  createMockServer(5001, "CamillaDSP-Test"),
-];
-
-// Gestion propre de l'arrêt
-function cleanup() {
-  console.log("\nArrêt des serveurs mock...");
-  servers.forEach(({ httpServer, camillaServer }) => {
-    camillaServer.stop();
-    httpServer.close();
+    httpServer.on("error", (error) => {
+      reject(error);
+    });
   });
 }
 
-process.on("SIGINT", cleanup);
-process.on("SIGTERM", cleanup);
+// Modification pour gérer les promesses
+async function startServers() {
+  try {
+    const servers = await Promise.all([
+      createMockServer(5000, "CamillaDSP-Main"),
+      createMockServer(5001, "CamillaDSP-Test"),
+    ]);
+
+    // Gestion propre de l'arrêt
+    function cleanup() {
+      console.log("\nArrêt des serveurs mock...");
+      servers.forEach(({ httpServer, camillaServer }) => {
+        camillaServer.stop();
+        httpServer.close();
+      });
+    }
+
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+
+    return servers;
+  } catch (error) {
+    console.error("Erreur lors du démarrage des serveurs:", error);
+    process.exit(1);
+  }
+}
+
+// Démarrage des serveurs
+startServers();

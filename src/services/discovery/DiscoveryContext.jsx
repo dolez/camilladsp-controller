@@ -1,15 +1,15 @@
 import { createContext } from "preact";
-import { camillaState } from "../camilla/CamillaClient";
+import { discoveryState } from "./DiscoveryClient";
+import { camillaState } from "../camilla/CamillaContext";
 
-export const DiscoveryContext = createContext(null);
+export const DiscoveryContext = createContext({
+  discoveryState,
+  camillaState,
+});
 
 export function DiscoveryProvider({ children }) {
-  const value = {
-    nodes: camillaState.value.nodes,
-  };
-
   return (
-    <DiscoveryContext.Provider value={value}>
+    <DiscoveryContext.Provider value={{ discoveryState, camillaState }}>
       {children}
     </DiscoveryContext.Provider>
   );

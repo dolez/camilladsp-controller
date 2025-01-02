@@ -4,8 +4,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "kill-port 3000 5173 && concurrently --kill-others \"vite\" \"nodemon server.js\"",
-    "dev:mock": "kill-port 3000 5173 && concurrently --kill-others \"vite\" \"node dev-server.js\"",
+    "dev": "vite",
     "dev:local": "./scripts/dev-local.sh",
     "dev:pi": "./scripts/dev-sync.sh watch",
     "dev:pi:setup": "./scripts/dev-sync.sh setup",
@@ -13,8 +12,8 @@
     "build:dev": "NODE_ENV=development vite build",
     "sync": "./scripts/dev-sync.sh sync",
     "server": "nodemon server.js",
-    "mock:nodes": "kill-port 5000 5001 && node src/services/camilla/mock-nodes.js",
-    "storybook": "kill-port 3000 6006 && concurrently --kill-others \"storybook dev -p 6006\" \"node dev-server.js\"",
+    "mock:nodes": "node src/services/camilla/mock-nodes.js",
+    "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"

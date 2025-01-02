@@ -1,8 +1,6 @@
 const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const path = require("path");
-const { camillaManager } = require("./src/services/camilla/CamillaClient");
 
 // Choisir l'implémentation selon l'environnement
 const AvahiMonitor =
@@ -35,8 +33,6 @@ io.on("connection", (socket) => {
   // Envoyer l'état actuel au nouveau client
   const services = Array.from(avahiMonitor.services.values());
   socket.emit("avahi-services", services);
-  // Mettre à jour le CamillaManager avec les services découverts
-  camillaManager.updateNodes(services);
 
   socket.on("disconnect", () => {
     console.log("Client déconnecté");

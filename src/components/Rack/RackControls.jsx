@@ -120,6 +120,19 @@ export function RackControls({
         />
       </ControlFieldset>
 
+      <ControlFieldset legend="Passe bas entree">
+        <Knob
+          label="Freq"
+          value={config.filters["Passe bas d'entrée"].parameters.freq}
+          onChange={handleLimiterChange}
+          min={20}
+          max={20000}
+          step={1}
+          unit="Hz"
+          size="sm"
+        />
+      </ControlFieldset>
+
       <ControlFieldset legend="Delay">
         <Knob
           label="Time"
@@ -140,7 +153,18 @@ export function RackControls({
           onChange={handleConvFileChange}
         />
       </ControlFieldset>
-
+      <ControlFieldset legend="Passe bas sortie">
+        <Knob
+          label="Freq"
+          value={config.filters["Passe bas de sortie"].parameters.freq}
+          onChange={handleLimiterChange}
+          min={20}
+          max={20000}
+          step={1}
+          unit="Hz"
+          size="sm"
+        />
+      </ControlFieldset>
       <ControlFieldset legend="Output" className="ml-auto">
         <div className="flex items-end gap-4">
           <Knob

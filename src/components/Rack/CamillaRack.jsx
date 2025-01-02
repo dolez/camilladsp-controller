@@ -1,14 +1,15 @@
-import { useContext, useState } from "react";
+import { useState } from "preact/hooks";
 import { RackUnit } from "./RackUnit";
-import { DiscoveryContext } from "../../services/discovery/DiscoveryContext";
 import { Alert } from "../ui/Alert";
 import { AlertDescription } from "../ui/Alert";
 import { useLinkedNodes } from "../../hooks/useLinkedNodes";
+import { useDiscovery } from "../../hooks/useDiscovery";
+import { getNodeId } from "../../services/camilla/CamillaContext";
 
 export function CamillaRack() {
-  const { nodes } = useContext(DiscoveryContext);
+  const { nodes } = useDiscovery();
   const [globalMode, setGlobalMode] = useState(false);
-  const { linkedGroups, linkNodes, unlinkNodes } = useLinkedNodes();
+  const { toggleNodeSelection } = useLinkedNodes();
 
   return (
     <div className="p-6 space-y-6 bg-black text-white min-h-screen">
@@ -23,7 +24,7 @@ export function CamillaRack() {
         </label>
       </div>
 
-      {nodes.size === 0 ? (
+      {!nodes || nodes.size === 0 ? (
         <Alert>
           <AlertDescription>
             No CamillaDSP nodes found. Make sure the nodes are running and
@@ -34,12 +35,11 @@ export function CamillaRack() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from(nodes.values()).map((node) => (
             <RackUnit
-              key={node.address}
+              key={getNodeId(node.address, node.port)}
               node={node}
               globalMode={globalMode}
-              onLink={(addresses) => linkNodes([node.address, ...addresses])}
-              onUnlink={(addresses) =>
-                unlinkNodes([node.address, ...addresses])
+              onSelect={() =>
+                toggleNodeSelection(getNodeId(node.address, node.port))
               }
             />
           ))}

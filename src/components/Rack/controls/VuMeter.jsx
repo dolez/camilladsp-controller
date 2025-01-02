@@ -34,12 +34,12 @@ export function VuMeter({ value = -60, min = -60, max = 0, className }) {
             key={i}
             className="w-2 h-2 rounded-sm"
             style={{
-              backgroundColor: intensity > 0 ? baseColor : `rgb(20 20 20)`, // LED éteinte
-              opacity: intensity > 0 ? 0.3 + intensity * 0.7 : 0.15,
+              backgroundColor: baseColor, // LED éteinte plus visible
+              opacity: intensity > 0 ? 0.3 + intensity * 0.7 : 0.3, // Opacité augmentée pour les LEDs éteintes
               boxShadow:
                 intensity > 0
                   ? `0 0 4px ${baseColor}, 0 0 2px ${baseColor}`
-                  : "none",
+                  : "inset 0 0 1px ${baseColor}", // Ajout d'une bordure subtile
               transition: "all 100ms ease-out",
             }}
           />

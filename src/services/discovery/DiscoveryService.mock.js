@@ -8,14 +8,9 @@ class DiscoveryServiceMock {
     console.log("Démarrage du mock de découverte...");
 
     // Ajoute des services de test
-    this.addMockService("CamillaDSP-Main", "127.0.0.1", 5000, {
+    this.addMockService("CamillaDSP-Main", "node1.local", 1234, {
       version: "2.0.0",
       config: "main.yml",
-    });
-
-    this.addMockService("CamillaDSP-Test", "127.0.0.1", 5001, {
-      version: "2.0.0",
-      config: "test.yml",
     });
 
     // Broadcast initial uniquement

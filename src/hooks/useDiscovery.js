@@ -1,41 +1,20 @@
-import { useEffect } from "react";
-import { camillaState } from "../services/camilla/CamillaClient";
+import { useEffect } from "preact/hooks";
+import {
+  DiscoveryClient,
+  discoveryState,
+} from "../services/discovery/DiscoveryClient";
 
 export function useDiscovery() {
-  const { nodes, selectedNodes } = camillaState.value;
-
   useEffect(() => {
-    // Cleanup on unmount
+    const discoveryClient = new DiscoveryClient();
+
+    discoveryClient.connect();
+
+    // Nettoyage à la destruction du composant
     return () => {
-      camillaState.value = {
-        ...camillaState.value,
-        selectedNodes: new Set(),
-      };
+      discoveryClient.disconnect();
     };
   }, []);
 
-  const selectNode = (node) => {
-    const newSelectedNodes = new Set(selectedNodes);
-    newSelectedNodes.add(node);
-    camillaState.value = {
-      ...camillaState.value,
-      selectedNodes: newSelectedNodes,
-    };
-  };
-
-  const unselectNode = (node) => {
-    const newSelectedNodes = new Set(selectedNodes);
-    newSelectedNodes.delete(node);
-    camillaState.value = {
-      ...camillaState.value,
-      selectedNodes: newSelectedNodes,
-    };
-  };
-
-  return {
-    nodes,
-    selectedNodes,
-    selectNode,
-    unselectNode,
-  };
+  return discoveryState.value;
 }

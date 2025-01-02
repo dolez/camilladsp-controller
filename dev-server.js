@@ -3,6 +3,7 @@ const { createServer } = require("http");
 const { Server } = require("socket.io");
 const AvahiMonitorMock = require("./src/services/discovery/DiscoveryService.mock");
 const CamillaServerMock = require("./src/services/camilla/camilla-server.mock");
+require("./src/services/camilla/mock-nodes");
 
 const app = express();
 const httpServer = createServer(app);

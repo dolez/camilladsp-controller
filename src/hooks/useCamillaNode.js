@@ -1,7 +1,28 @@
-import { useEffect, useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { signal } from "@preact/signals";
 import { CamillaClient } from "../services/camilla/CamillaClient";
 import { camillaState, getNodeId } from "../services/camilla/CamillaContext";
+
+// Fonction utilitaire de debounce avec trailing
+function debounce(func, wait) {
+  let timeout;
+  let lastArgs;
+
+  const execute = () => {
+    func.apply(null, lastArgs);
+    lastArgs = null;
+  };
+
+  return function executedFunction(...args) {
+    lastArgs = args;
+
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    timeout = setTimeout(execute, wait);
+  };
+}
 
 // État local pour chaque nœud
 export const createNodeState = () =>
@@ -38,6 +59,13 @@ export function useCamillaNode(address, port) {
       nodeStates: updatedNodeStates,
     };
   };
+
+  // Crée une version debounced de setConfig avec un délai de 200ms (5Hz)
+  const debouncedSetConfig = useRef(
+    debounce((config) => {
+      clientRef.current?.setConfig(config);
+    }, 200)
+  ).current;
 
   useEffect(() => {
     const client = new CamillaClient(address, port);
@@ -79,7 +107,7 @@ export function useCamillaNode(address, port) {
     const currentConfig = nodeState.value.config;
     if (!currentConfig) return;
 
-    // Mise à jour optimiste
+    // Mise à jour optimiste immédiate
     const newConfig = { ...currentConfig };
     if (newConfig.filters?.[filterName]?.parameters) {
       newConfig.filters[filterName].parameters[paramName] = value;
@@ -88,8 +116,18 @@ export function useCamillaNode(address, port) {
       });
     }
 
-    // Envoi au serveur
-    clientRef.current?.setFilterParam(filterName, paramName, value);
+    // Envoi au serveur debounced
+    debouncedSetConfig(newConfig);
+  };
+
+  const setConfig = (config) => {
+    // Mise à jour optimiste immédiate
+    updateState({
+      config,
+    });
+
+    // Envoi au serveur debounced
+    debouncedSetConfig(config);
   };
 
   const setMixerGain = (mixerName, destIndex, sourceIndex, gain) => {
@@ -133,5 +171,6 @@ export function useCamillaNode(address, port) {
     setFilterParam,
     setMixerGain,
     setFilterBypass,
+    setConfig,
   };
 }

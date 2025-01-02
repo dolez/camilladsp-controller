@@ -47,22 +47,7 @@ export function RackControls({
   };
 
   const handleGainChange = (value) => {
-    onConfigChange({
-      ...config,
-      mixers: {
-        ...config.mixers,
-        "Unnamed Mixer 1": {
-          ...config.mixers["Unnamed Mixer 1"],
-          mapping: config.mixers["Unnamed Mixer 1"].mapping.map((channel) => ({
-            ...channel,
-            sources: channel.sources.map((source) => ({
-              ...source,
-              gain: value,
-            })),
-          })),
-        },
-      },
-    });
+    onConfigChange("gain", value);
   };
 
   const currentGain =

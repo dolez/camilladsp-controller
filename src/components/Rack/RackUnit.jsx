@@ -4,10 +4,9 @@ import { Card, CardHeader, CardContent } from "../ui/Card";
 import { NodeHeader } from "./NodeHeader";
 import { RackControls } from "./RackControls";
 import { useCamillaNode } from "../../hooks/useCamillaNode";
-import { getNodeId } from "../../services/camilla/CamillaContext";
 
 export function RackUnit({ node, globalMode, onSelect }) {
-  const { state, setFilterParam, setMixerGain, setFilterBypass } =
+  const { state, setFilterParam, setMixerGain, setFilterBypass, setConfig } =
     useCamillaNode(node.address, node.port);
 
   const { config, metrics, connected: isConnected } = state;
@@ -34,6 +33,25 @@ export function RackUnit({ node, globalMode, onSelect }) {
   }, [node.address]);
 
   const updateConfig = (path, value) => {
+    // Cas spécial pour le gain qui affecte tous les canaux
+    if (path === "gain") {
+      const newConfig = { ...config };
+      if (newConfig.mixers?.["Unnamed Mixer 1"]?.mapping) {
+        newConfig.mixers["Unnamed Mixer 1"].mapping = newConfig.mixers[
+          "Unnamed Mixer 1"
+        ].mapping.map((channel) => ({
+          ...channel,
+          sources: channel.sources.map((source) => ({
+            ...source,
+            gain: value,
+          })),
+        }));
+        setConfig(newConfig);
+      }
+      return;
+    }
+
+    // Cas normal pour les paramètres de filtres
     const [filterName, paramName] = path.split(".");
     setFilterParam(filterName, paramName, value);
   };

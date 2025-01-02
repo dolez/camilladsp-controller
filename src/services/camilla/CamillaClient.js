@@ -67,7 +67,7 @@ export class CamillaClient {
 
             // Métriques lentes
             if (data["GetProcessingLoad"]) {
-              metrics.cpuLoad = data["GetProcessingLoad"].value * 100; // Convertir en pourcentage
+              metrics.cpuLoad = data["GetProcessingLoad"].value; // Convertir en pourcentage
             }
             if (data["GetCaptureRate"]) {
               metrics.captureRate = data["GetCaptureRate"].value / 1000; // Convertir en kHz

@@ -1,0 +1,11 @@
+[Unit]
+Description=Configure UART ports
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup-uart.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target 

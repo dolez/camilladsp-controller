@@ -1,0 +1,13 @@
+[Unit]
+Description=Set WiFi regulatory domain
+Before=NetworkManager.service systemd-rfkill.service systemd-rfkill.socket
+DefaultDependencies=no
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/iw reg set FR
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

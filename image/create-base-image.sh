@@ -135,9 +135,9 @@ echo "console=ttyGS0,115200 console=tty1 root=PARTUUID=${PARTUUID} rootfstype=ex
 }
 
 setup_wifi() {
-    cat > /mnt/root/etc/NetworkManager/system-connections/wifi-default.nmconnection << EOF
+    cat > /mnt/root/etc/NetworkManager/system-connections/${WIFI_SSID}.nmconnection << EOF
 [connection]
-id=wifi-default
+id=${WIFI_SSID}
 type=wifi
 interface-name=wlan0
 autoconnect=true
@@ -145,12 +145,12 @@ permissions=
 
 [wifi]
 mode=infrastructure
-ssid=\${WIFI_SSID}
+ssid=${WIFI_SSID}
 
 [wifi-security]
 auth-alg=open
 key-mgmt=wpa-psk
-psk=\${WIFI_PSK}
+psk=${WIFI_PSK}
 
 [ipv4]
 method=auto
@@ -159,7 +159,7 @@ method=auto
 addr-gen-mode=default
 method=auto
 EOF
-    chmod 600 /mnt/root/etc/NetworkManager/system-connections/wifi-default.nmconnection
+    chmod 600 /mnt/root/etc/NetworkManager/system-connections/${WIFI_SSID}.nmconnection
 }
 
 setup_common() {
@@ -214,6 +214,7 @@ echo "dwc2" >> /etc/modules
 echo "g_serial" >> /etc/modules
 
 echo "🌐 Configuration services essentiels..."
+systemctl enable wifi-regdom.service
 systemctl enable ssh
 systemctl enable NetworkManager
 systemctl enable avahi-daemon

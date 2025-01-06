@@ -120,7 +120,7 @@ EOF
 
     # Configuration USB gadget et console
     PARTUUID=$(blkid -s PARTUUID -o value /dev/mapper/${LOOP_DEV}p2)
-echo "console=ttyGS0,115200 console=tty1 root=PARTUUID=${PARTUUID} rootfstype=ext4 fsck.repair=yes rootwait modules-load=dwc2,g_serial" > /mnt/boot/cmdline.txt
+    echo "console=ttyGS0,115200 console=tty1 root=PARTUUID=${PARTUUID} rootfstype=ext4 fsck.repair=yes rootwait modules-load=dwc2,g_serial cfg80211.ieee80211_regdom=FR" > /mnt/boot/cmdline.txt
     echo "$hostname" > /mnt/root/etc/hostname
     sed -i "s/^127.0.1.1.*$/127.0.1.1\t${hostname}/" /mnt/root/etc/hosts
     touch /mnt/boot/ssh
@@ -184,7 +184,6 @@ source /tmp/config
 export DEBIAN_FRONTEND=noninteractive
 
 echo "🔧 Configuration de l'utilisateur..."
-# Pas de recréation de pi qui existe déjà on set le mot de passe
 useradd -m -s /bin/bash "$DEFAULT_USER"
 echo "$DEFAULT_USER:$DEFAULT_PASSWORD" | chpasswd
 usermod -aG sudo,audio,netdev,i2c "$DEFAULT_USER"
@@ -220,7 +219,6 @@ systemctl enable NetworkManager
 systemctl enable avahi-daemon
 
 echo "🎯 Configuration du mode console..."
-# Désactiver proprement userconfig
 systemctl disable userconfig.service
 rm -f /etc/systemd/system/multi-user.target.wants/userconfig.service
 rm -f /usr/lib/userconf-pi/userconf-service
@@ -238,6 +236,10 @@ systemctl disable rpi-eeprom-update.service
 echo "💀 Désactivation des services de redimensionnement..."
 update-rc.d resize2fs_once remove 
 rm -f /etc/init.d/resize2fs_once
+
+echo "📡 Activation wifi"
+sed -i 's/WirelessEnabled=false/WirelessEnabled=true/' /var/lib/NetworkManager/NetworkManager.state
+echo 0 > /var/lib/systemd/rfkill/platform-3f300000.mmcnr:wlan
 
 EOF
 

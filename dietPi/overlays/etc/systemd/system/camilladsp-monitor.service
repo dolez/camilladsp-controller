@@ -1,0 +1,12 @@
+[Unit]
+Description=CamillaDSP Service Monitor
+After=network.target avahi-daemon.service nginx.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/camilladsp-monitor.sh
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

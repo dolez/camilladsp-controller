@@ -16,8 +16,7 @@ trap cleanup EXIT INT TERM
 [ -p "$FIFO" ] && rm "$FIFO"
 mkfifo "$FIFO"
 
-socat TCP-LISTEN:8080,reuseaddr,fork,bind=127.0.0.1 SYSTEM:"/usr/local/bin/sse_handler.sh $FIFO" &
-
+socat TCP-LISTEN:8080,reuseaddr,fork,bind=127.0.0.1 SYSTEM:"/usr/local/bin/sse_handler.sh $FIFO 3>&1" &
 
 SOCAT_PID=$!
 echo "Socat started with PID $SOCAT_PID"
@@ -35,13 +34,15 @@ update_nodes_file() {
 
     echo "$temp_output" | \
     awk -F';' '/^=/ {
-        gsub(/"/, "\\\"", $3); # Échapper les guillemets dans les noms
-        gsub(/"/, "\\\"", $6);
-        name = ($3 == "" ? "null" : "\"" $3 "\"");
-        host = ($6 == "" ? "null" : "\"" $6 "\"");
-        ip = ($7 == "" ? "null" : "\"" $7 "\""); # Correction: $7 pour IP
-        port = ($8 == "" || $8 !~ /^[0-9]+$/ ? "null" : $8); # Correction: $8 pour port
-        print "{\"name\":" name ",\"host\":" host ",\"ip\":" ip ",\"port\":" port "}"
+        gsub(/"/, "\\\"", $4); # Échapper les guillemets dans les noms
+        gsub(/"/, "\\\"", $7); # Échapper les guillemets dans le hostname
+        name = ($4 == "" ? "null" : "\"" $4 "\"");
+        host = ($7 == "" ? "null" : "\"" $7 "\"");
+        ip = ($8 == "" ? "null" : "\"" $8 "\"");
+        port = ($9 == "" || $9 !~ /^[0-9]+$/ ? "null" : $9);
+        interface = ($2 == "" ? "null" : "\"" $2 "\"");
+        protocol = ($3 == "" ? "null" : "\"" $3 "\"");
+        print "{\"name\":" name ",\"host\":" host ",\"ip\":" ip ",\"port\":" port ",\"interface\":" interface ",\"protocol\":" protocol "}"
     }' | \
     jq -c '{"nodes":.}' > "$NODES_FILE"
 }
@@ -53,21 +54,23 @@ update_nodes_file
 # Monitorer les changements avec gestion d'erreurs améliorée
 avahi-browse --parsable --resolve --no-db-lookup _camilladsp._tcp | while read -r line; do
     case ${line:0:1} in
+        '+') # Service découvert
+            # Pas d'action nécessaire pour l'instant, on attend la résolution complète
+            ;;
         '=') # Service résolu avec détails
             update_nodes_file
             json_event=$(echo "$line" | awk -F';' '{
-                gsub(/"/, "\\\"", $3);
-                gsub(/"/, "\\\"", $6);
-                printf "{\"event\":\"connected\",\"name\":\"%s\",\"host\":\"%s\",\"ip\":\"%s\",\"port\":%s}",
-                $3, $6, $7, $8
+                gsub(/"/, "\\\"", $4); # name est dans $4 (TestCamillaDSP)
+                printf "{\"event\":\"connected\",\"interface\":\"%s\",\"protocol\":\"%s\",\"name\":\"%s\",\"host\":\"%s\",\"ip\":\"%s\",\"port\":%s}",
+                $2, $3, $4, $7, $8, $9
             }')
             ;;
         '-') # Service déconnecté
             update_nodes_file
             json_event=$(echo "$line" | awk -F';' '{
-                gsub(/"/, "\\\"", $3);
-                printf "{\"event\":\"disconnected\",\"name\":\"%s\"}",
-                $3
+                gsub(/"/, "\\\"", $4);
+                printf "{\"event\":\"disconnected\",\"interface\":\"%s\",\"protocol\":\"%s\",\"name\":\"%s\"}",
+                $2, $3, $4
             }')
             ;;
     esac

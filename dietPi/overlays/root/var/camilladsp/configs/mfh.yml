@@ -65,56 +65,56 @@ mixers:
       out: 2
     description: null
     mapping:
-    - dest: 1
-      mute: false
-      sources:
-      - channel: 0
-        gain: 0
-        inverted: false
+      - dest: 1
         mute: false
-        scale: dB
-    - dest: 0
-      mute: false
-      sources:
-      - channel: 0
-        gain: 0
-        inverted: false
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+            mute: false
+            scale: dB
+      - dest: 0
         mute: false
-        scale: dB
+        sources:
+          - channel: 0
+            gain: 0
+            inverted: false
+            mute: false
+            scale: dB
 pipeline:
-- bypassed: null
-  channel: 0
-  description: null
-  names:
-  - Limiteur
-  type: Filter
-- bypassed: null
-  channel: 0
-  description: null
-  names:
-  - "Passe bas d'entr\xE9e"
-  type: Filter
-- bypassed: null
-  channel: 0
-  description: null
-  names:
-  - Delai
-  type: Filter
-- bypassed: null
-  channel: 0
-  description: null
-  names:
-  - Convolution
-  type: Filter
-- bypassed: null
-  channel: 0
-  description: null
-  names:
-  - Passe bas de sortie
-  type: Filter
-- bypassed: null
-  description: null
-  name: Unnamed Mixer 1
-  type: Mixer
+  - bypassed: null
+    channel: 0
+    description: null
+    names:
+      - Limiteur
+    type: Filter
+  - bypassed: null
+    channel: 0
+    description: null
+    names:
+      - "Passe bas d'entr\xE9e"
+    type: Filter
+  - bypassed: null
+    channel: 0
+    description: null
+    names:
+      - Delai
+    type: Filter
+  - bypassed: null
+    channel: 0
+    description: null
+    names:
+      - Convolution
+    type: Filter
+  - bypassed: null
+    channel: 0
+    description: null
+    names:
+      - Passe bas de sortie
+    type: Filter
+  - bypassed: null
+    description: null
+    name: Unnamed Mixer 1
+    type: Mixer
 processors: {}
 title: My Favorite Hall

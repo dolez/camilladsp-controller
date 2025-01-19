@@ -1,0 +1,13 @@
+[Unit]
+Description=CamillaDSP Audio Processing
+After=sound.target network.target camilladsp-role.service
+Wants=network.target
+
+[Service]
+WorkingDirectory=/var/camilladsp
+ExecStart=/usr/local/bin/camilladsp -s statefile.yml -o logs/camilladsp.log -c configs/mfh.yml -p 1234
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target 

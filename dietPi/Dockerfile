@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     curl \
-    jq \
+    fdisk \
     pigz \
     && rm -rf /var/lib/apt/lists/*
 

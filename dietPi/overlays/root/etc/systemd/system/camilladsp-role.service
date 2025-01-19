@@ -1,0 +1,12 @@
+[Unit]
+Description=CamillaDSP Role Detection Service
+After=network.target
+Before=camilladsp.service nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/detect-role.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target 

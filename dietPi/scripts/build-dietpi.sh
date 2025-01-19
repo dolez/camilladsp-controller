@@ -10,86 +10,55 @@ echo "🚀 Préparation de l'image DietPi optimisée..."
 
 # Gestion du cache de l'image
 if [ ! -f "${CACHE_DIR}/${BASE_IMAGE}" ]; then
+    echo "📥 Téléchargement de l'image DietPi..."
     wget -O "${CACHE_DIR}/dietpi.img.xz" "${DIETPI_URL}"
+    echo "📦 Décompression de l'image..."
     xz -d "${CACHE_DIR}/dietpi.img.xz"
     mv "${CACHE_DIR}/dietpi.img" "${CACHE_DIR}/${BASE_IMAGE}"
 fi
 
-# Copie de l'image de travail
+echo "📋 Copie de l'image de travail..."
 cp "${CACHE_DIR}/${BASE_IMAGE}" "/build/${BASE_IMAGE}"
 
-# Montage de l'image
-# Montage de l'image
-losetup -f "/build/${BASE_IMAGE}"
-LOOP_DEV=$(losetup -j "/build/${BASE_IMAGE}" | cut -d: -f1)
-echo "Loop device is: ${LOOP_DEV}"
+# Nettoyage complet des périphériques loop
+echo "🧹 Nettoyage des périphériques loop..."
+losetup -D
+sleep 2
+losetup -l
 
+# Montage de l'image avec un seul périphérique loop
+echo "💿 Montage de l'image..."
+LOOP_DEV=$(losetup --show -f "/build/${BASE_IMAGE}")
+echo "Périphérique loop: ${LOOP_DEV}"
+
+# Vérification que le périphérique est bien monté
+if ! losetup -l | grep -q "${LOOP_DEV}"; then
+    echo "❌ Erreur: Le périphérique loop n'a pas été créé correctement"
+    exit 1
+fi
+
+# Création des périphériques de partition
+echo "🔧 Configuration des partitions..."
 kpartx -av "${LOOP_DEV}"
+sleep 2
 
+# Récupération du nom de base du périphérique loop
+LOOP_BASE=$(basename ${LOOP_DEV})
 
+# Montage des partitions
+echo "📁 Montage des partitions..."
 mkdir -p /mnt/dietpi_boot /mnt/dietpi_root
-mount "/dev/mapper/$(basename ${LOOP_DEV})p1" /mnt/dietpi_boot
-mount "/dev/mapper/$(basename ${LOOP_DEV})p2" /mnt/dietpi_root
-
-# Configuration DietPi optimisée
-cat > /mnt/dietpi_boot/dietpi.txt << EOF
-AUTO_SETUP_LOCALE=fr_FR.UTF-8
-AUTO_SETUP_KEYBOARD_LAYOUT=fr
-AUTO_SETUP_TIMEZONE=Europe/Paris
-AUTO_SETUP_NET_ETHERNET_ENABLED=0
-AUTO_SETUP_NET_WIFI_ENABLED=1
-AUTO_SETUP_NET_WIFI_COUNTRY_CODE=FR
-AUTO_SETUP_AUTOMATED=1
-AUTO_SETUP_HEADLESS=1
-CONFIG_SERIAL_CONSOLE_ENABLE=1
-CONFIG_SOUNDCARD=wm8960-soundcard
-CONFIG_BOOT_WAIT_FOR_NETWORK=2
-CONFIG_CPU_GOVERNOR=conservative
-CONFIG_CPU_USAGE_THROTTLE_UP=50
-CONFIG_RAM_ARMCPU=240M
-CONFIG_RAM_GPU=0
-AUTO_SETUP_SWAPFILE_SIZE=0
-CONFIG_APT_DISABLE_RECOMMENDS=1
-CONFIG_APT_DISABLE_SUGGESTS=1
-EOF
-
-# Configuration RPi optimisée
-cat > /mnt/dietpi_boot/config.txt << EOF
-[pi0w2]
-gpu_mem=0
-dtoverlay=disable-bt
-dtoverlay=dwc2
-dtoverlay=wm8960
-dtoverlay=i2s-mmap
-dtoverlay=wm8960-soundcard
-disable_splash=1
-disable_camera=1
-hdmi_blanking=2
-hdmi_force_hotplug=0
-dtparam=audio=off
-total_mem=512
-EOF
+mount "/dev/mapper/${LOOP_BASE}p1" /mnt/dietpi_boot
+mount "/dev/mapper/${LOOP_BASE}p2" /mnt/dietpi_root
 
 # Configuration de la console série USB
+sed -i 's/console=serial0,115200 //' /mnt/dietpi_boot/cmdline.txt
 sed -i 's/console=tty1/console=ttyGS0,115200 console=tty1/' /mnt/dietpi_boot/cmdline.txt
 echo "modules-load=dwc2,g_serial" >> /mnt/dietpi_boot/cmdline.txt
 
-# Configuration APT pour limiter les installations
-cat > /mnt/dietpi_root/etc/apt/apt.conf.d/99norecommends << EOF
-APT::Install-Recommends "false";
-APT::Install-Suggests "false";
-APT::AutoRemove::RecommendsImportant "false";
-APT::AutoRemove::SuggestsImportant "false";
-EOF
-
-# Préparation des répertoires
-mkdir -p /mnt/dietpi_root/etc/nginx/sites-enabled
-mkdir -p /mnt/dietpi_root/usr/local/bin
-
 # Copie des overlays
-cp -r /overlays/nginx/* /mnt/dietpi_root/etc/nginx/
-cp -r /overlays/scripts/* /mnt/dietpi_root/usr/local/bin/
-chmod +x /mnt/dietpi_root/usr/local/bin/*
+cp -rp /overlays/root/* /mnt/dietpi_root/
+cp -rp /overlays/boot/* /mnt/dietpi_boot/
 
 mkdir -p /mnt/dietpi_root/dev
 mount --bind /dev /mnt/dietpi_root/dev
@@ -97,80 +66,51 @@ mount --bind /dev/pts /mnt/dietpi_root/dev/pts
 mount -t proc proc /mnt/dietpi_root/proc
 mount -t sysfs sys /mnt/dietpi_root/sys
 
-
 echo "📦 Installation des paquets et configuration du système..."
 chroot /mnt/dietpi_root /bin/bash -c "
     set -x
     
     # Configuration de l'environnement
     export DEBIAN_FRONTEND=noninteractive
-    
+
     # Mise à jour initiale
     apt-get update
     apt-get install -y gnupg gpgv
-    
-    # Nettoyage initial des paquets non nécessaires
-    apt-get -y --purge remove triggerhappy bluetooth bluez
-    
+
     # Installation de tous les paquets nécessaires
     apt-get install -y --no-install-recommends \
         alsa-utils \
         network-manager \
         avahi-daemon \
         nginx-light \
-        websocketd \
-        fcgiwrap \
         curl \
-        jq
+        jq \
+        hostapd \
+        dnsmasq \
+        socat \
+        fcgiwrap
     
-    # Configuration des modules
-    echo 'snd-wm8960-soundcard' >> /etc/modules
-    echo 'snd-aloop' >> /etc/modules
-    echo 'dwc2' >> /etc/modules
-    echo 'g_serial' >> /etc/modules
-    
-    # Configuration initiale de NetworkManager
-    cat > /etc/NetworkManager/system-connections/CamillaDSP.nmconnection << EOL
-[connection]
-id=CamillaDSP
-type=wifi
-interface-name=wlan0
-permissions=
-
-[wifi]
-mode=infrastructure
-ssid=${WIFI_SSID:-CamillaDSP}
-
-[wifi-security]
-auth-alg=open
-key-mgmt=wpa-psk
-psk=${WIFI_PSK:-camilladsp}
-
-[ipv4]
-method=auto
-
-[ipv6]
-addr-gen-mode=default
-method=auto
-EOL
-    chmod 600 /etc/NetworkManager/system-connections/CamillaDSP.nmconnection
+    # Téléchargement et installation de CamillaDSP
+    mkdir -p /opt/camilladsp
+    curl -L https://github.com/HEnquist/camilladsp/releases/download/v3.0.0/camilladsp-linux-armv7.tar.gz | tar xz -C /opt/camilladsp
+    chmod +x /opt/camilladsp/camilladsp
+    ln -s /opt/camilladsp/camilladsp /usr/local/bin/camilladsp
+    chmod +x /usr/local/bin/*
 
     # Activation des services essentiels
-    systemctl enable serial-getty@ttyGS0.service
     systemctl enable nginx
     systemctl enable avahi-daemon
-    systemctl enable fcgiwrap
     systemctl enable NetworkManager
+    systemctl enable camilladsp-role.service
+    systemctl enable fcgiwrap
     
     # Désactivation des services non nécessaires
-    systemctl disable bluetooth.service
-    systemctl disable triggerhappy.service
     systemctl disable systemd-timesyncd.service
     systemctl disable apt-daily.timer
     systemctl disable apt-daily-upgrade.timer
     
     # Nettoyage agressif
-    apt-get -y --purge remove gpgv gnupg
+    apt-get -y --purge remove gpgv gnupg triggerhappy bluetooth bluez
     apt-get autoremove -y
     apt-get clean
     rm -rf /var/lib/apt/lists/*
@@ -193,14 +133,11 @@ umount /mnt/dietpi_root/dev/pts || true
 umount /mnt/dietpi_root/dev || true
 umount /mnt/dietpi_root/proc || true
 umount /mnt/dietpi_root/sys || true
-umount /mnt/dietpi_boot || true
-umount /mnt/dietpi_root || true
+umount /mnt/dietpi_boot
+umount /mnt/dietpi_root
 
 # Get loop base name before detaching
 LOOP_BASE=$(basename ${LOOP_DEV})
-
-# Perform filesystem operations
-echo "📏 Optimisation de la taille..."
 
 # Ajouter une marge de sécurité (par exemple 5%)
 MARGIN_SIZE=$((USED_SIZE / 20))
@@ -219,7 +156,7 @@ PART2_START_BYTES=$((PART2_START * 512))
 NEW_SIZE=$((PART2_START_BYTES + TOTAL_NEEDED_SIZE))
 
 # Tronquer l'image
-truncate -s "${NEW_SIZE}" "/build/${BASE_IMAGE}"
+# truncate -s "${NEW_SIZE}" "/build/${BASE_IMAGE}"
 
 # Information sur la taille finale
 echo "📊 Taille finale du système de fichiers :"

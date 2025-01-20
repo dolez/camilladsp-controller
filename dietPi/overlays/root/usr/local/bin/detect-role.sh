@@ -9,16 +9,18 @@ mkdir -p /var/lib/camilladsp
 # Fonction pour activer le rôle master
 activate_master() {
     echo "master" > "${ROLE_FILE}"
-    systemctl enable --now hostapd
-    systemctl enable --now dnsmasq
+    # Créer et activer le hotspot
+    nmcli connection add type wifi ifname wlan0 con-name Hotspot ssid "${HOTSPOT_SSID}" mode ap
+    nmcli connection modify Hotspot ipv4.addresses 192.168.4.1/24 ipv4.method manual
+    nmcli connection up Hotspot
     systemctl restart avahi-daemon
 }
 
 # Fonction pour activer le rôle node
 activate_node() {
     echo "node" > "${ROLE_FILE}"
-    systemctl disable --now hostapd
-    systemctl disable --now dnsmasq
+    # Se connecter au hotspot
+    nmcli device wifi connect "${HOTSPOT_SSID}"
     systemctl restart avahi-daemon
 }
 

@@ -100,14 +100,14 @@ chroot /mnt/dietpi_root /bin/bash -c "
     # Activation des services essentiels
     systemctl enable nginx
     systemctl enable avahi-daemon
-    systemctl enable NetworkManager
-    systemctl enable camilladsp-role.service
+     systemctl enable camilladsp-role.service
     systemctl enable fcgiwrap
     
     # Désactivation des services non nécessaires
     systemctl disable systemd-timesyncd.service
     systemctl disable apt-daily.timer
     systemctl disable apt-daily-upgrade.timer
+    systemctl disable dietpi-firstboot
     
     # Nettoyage agressif
     apt-get -y --purge remove gpgv gnupg triggerhappy bluetooth bluez

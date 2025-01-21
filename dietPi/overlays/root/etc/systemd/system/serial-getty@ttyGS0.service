@@ -1,0 +1,23 @@
+[Unit]
+Description=Serial Getty on ttyGS0
+Documentation=man:agetty(8) man:systemd-getty-generator(8)
+BindsTo=dev-ttyGS0.device
+After=dev-ttyGS0.device systemd-user-sessions.service plymouth-quit-wait.service
+After=rc-local.service
+Before=getty.target
+ConditionPathExists=/dev/ttyGS0
+
+[Service]
+ExecStart=/sbin/agetty -o '-p -- \\u' --keep-baud 115200,57600,38400,9600 ttyGS0 $TERM
+Type=idle
+Restart=always
+UtmpIdentifier=ttyGS0
+TTYPath=/dev/ttyGS0
+TTYReset=yes
+TTYVHangup=yes
+KillMode=process
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+
+[Install]
+WantedBy=getty.target

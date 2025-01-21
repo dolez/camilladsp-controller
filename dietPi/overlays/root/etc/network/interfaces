@@ -1,0 +1,10 @@
+# Location: /etc/network/interfaces
+# Please modify network settings via: dietpi-config
+# Or create your own drop-ins in: /etc/network/interfaces.d/
+
+# Drop-in configs
+source interfaces.d/*
+
+# Interfaces now managed by NetworkManager
+auto lo
+iface lo inet loopback

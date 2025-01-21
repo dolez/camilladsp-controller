@@ -85,11 +85,28 @@ chroot /mnt/dietpi_root /bin/bash -c "
         nginx-light \
         curl \
         jq \
-        hostapd \
-        dnsmasq \
         socat \
         fcgiwrap
-    
+
+    # Reconfigurer les paquets clavier
+    dpkg-reconfigure -f noninteractive keyboard-configuration
+    dpkg-reconfigure -f noninteractive console-setup
+
+    # Mettre à jour les paramètres de la console
+    setupcon --save-only
+
+    # S'assurer que les services de configuration du clavier sont activés
+    systemctl enable keyboard-setup.service
+    systemctl enable console-setup.service
+
+    # Forcer la configuration dans /etc/console-setup/cached_setup_keyboard.sh
+    sed -i 's/XKBLAYOUT=.*/XKBLAYOUT="fr"/' /etc/console-setup/cached_setup_keyboard.sh
+
+
+    # Configuration du mot de passe root et dietpi
+    echo "root:camilladsp" | chpasswd
+    echo "dietpi:camilladsp" | chpasswd
+
     # Téléchargement et installation de CamillaDSP
     mkdir -p /opt/camilladsp
     curl -L https://github.com/HEnquist/camilladsp/releases/download/v3.0.0/camilladsp-linux-armv7.tar.gz | tar xz -C /opt/camilladsp
@@ -100,15 +117,44 @@ chroot /mnt/dietpi_root /bin/bash -c "
     # Activation des services essentiels
     systemctl enable nginx
     systemctl enable avahi-daemon
-     systemctl enable camilladsp-role.service
+    systemctl enable camilladsp-role.service
     systemctl enable fcgiwrap
+    systemctl enable serial-getty@ttyGS0.service
+    systemctl enable NetworkManager.service
     
     # Désactivation des services non nécessaires
     systemctl disable systemd-timesyncd.service
     systemctl disable apt-daily.timer
     systemctl disable apt-daily-upgrade.timer
-    systemctl disable dietpi-firstboot
-    
+    systemctl disable dietpi-firstboot.service
+    systemctl disable dietpi-cloudshell.service
+    systemctl disable dietpi-fs_partition_resize.service
+    systemctl disable dietpi-postboot.service
+    systemctl disable dietpi-preboot.service
+    systemctl disable dietpi-ramlog.service
+    systemctl disable dietpi-vpn.service
+    systemctl disable dietpi-wifi-monitor.service
+    systemctl disable dietpi-kill_ssh.service
+    systemctl disable dpkg-db-backup.timer
+    systemctl disable fstrim.timer
+    systemctl disable dropbear.service
+    systemctl disable fake-hwclock.service
+    systemctl disable console-setup.service
+    systemctl disable dietpi-kill_ssh.service
+    systemctl disable dpkg-db-backup.timer
+    systemctl disable fstrim.timer
+    systemctl disable dropbear.service
+    systemctl disable fake-hwclock.service
+    systemctl disable NetworkManager-wait-online.service
+rm -f /etc/systemd/system/network-online.target.wants/NetworkManager-wait-online.service
+    systemctl disable console-setup.service
+    systemctl disable serial-getty@serial0.service
+    rm -f /etc/systemd/system/getty.target.wants/serial-getty@serial0.service
+    systemctl disable networking.service
+    rm -f /etc/systemd/system/network-online.target.wants/networking.service
+    rm -f /etc/systemd/system/multi-user.target.wants/networking.service    
+    rm /etc/systemd/system/dietpi-firstboot.service
+
     # Nettoyage agressif
     apt-get -y --purge remove gpgv gnupg triggerhappy bluetooth bluez
     apt-get autoremove -y

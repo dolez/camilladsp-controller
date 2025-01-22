@@ -4,32 +4,93 @@ set -e
 TIMEOUT=10
 HOTSPOT_SSID="CamillaDSP"
 ROLE_FILE="/var/lib/camilladsp/role"
+HOSTAPD_CONF="/etc/hostapd/hostapd.conf"
+WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
 
 mkdir -p /var/lib/camilladsp
 
-# Assurer que wlan0 est managed
-nmcli device set wlan0 managed yes
+# Assurer que le power save est désactivé
+iw dev wlan0 set power_save off 2>/dev/null || true
+
+# Fonction pour obtenir un nom unique basé sur l'adresse MAC
+get_unique_hostname() {
+    # Récupère les 4 derniers caractères de l'adresse MAC de wlan0
+    MAC_SUFFIX=$(cat /sys/class/net/wlan0/address | tr -d ':' | tail -c 5)
+    echo "node-${MAC_SUFFIX}"
+}
 
 # Fonction pour activer le rôle master
 activate_master() {
     echo "master" > "${ROLE_FILE}"
-    # Nettoyage de l'ancienne configuration si elle existe
-    nmcli connection delete Hotspot 2>/dev/null || true
-    # Créer et activer le hotspot
-    nmcli connection add type wifi ifname wlan0 con-name Hotspot ssid "${HOTSPOT_SSID}" mode ap
-    nmcli connection modify Hotspot ipv4.addresses 192.168.4.1/24 ipv4.method shared
-    nmcli connection up Hotspot
+    
+    # Configuration du hostname
+    hostnamectl set-hostname dietpi
+    echo "127.0.1.1 dietpi.local dietpi" >> /etc/hosts
+    
+    # Configuration de hostapd
+    cat > "${HOSTAPD_CONF}" << EOF
+interface=wlan0
+driver=nl80211
+ssid=${HOTSPOT_SSID}
+hw_mode=g
+channel=7
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=0
+EOF
+    
+    # Configuration du réseau
+    ip link set wlan0 down
+    ip addr flush dev wlan0
+    ip addr add 192.168.4.1/24 dev wlan0
+    ip link set wlan0 up
+    
+    # Démarrage des services
+    systemctl restart dnsmasq
+    systemctl restart hostapd
+    
     systemctl restart avahi-daemon
 }
 
 # Fonction pour activer le rôle node
 activate_node() {
+    # Génère un nom d'hôte unique
+    UNIQUE_HOSTNAME=$(get_unique_hostname)
     echo "node" > "${ROLE_FILE}"
-    # Se connecter au hotspot avec timeout
-    if ! timeout ${TIMEOUT} nmcli device wifi connect "${HOTSPOT_SSID}"; then
+    
+    # Configuration du hostname
+    hostnamectl set-hostname "${UNIQUE_HOSTNAME}"
+    echo "127.0.1.1 ${UNIQUE_HOSTNAME}.local ${UNIQUE_HOSTNAME}" >> /etc/hosts
+    
+    # Configuration de wpa_supplicant
+    cat > "${WPA_CONF}" << EOF
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=FR
+
+network={
+    ssid="${HOTSPOT_SSID}"
+    key_mgmt=NONE
+}
+EOF
+    
+    # Arrêt des services master si actifs
+    systemctl stop hostapd dnsmasq || true
+    
+    # Configuration du réseau
+    ip link set wlan0 down
+    ip addr flush dev wlan0
+    ip link set wlan0 up
+    
+    # Démarrage de wpa_supplicant et attente de connexion
+    wpa_supplicant -B -i wlan0 -c "${WPA_CONF}"
+    if ! timeout ${TIMEOUT} sh -c 'until ip addr show wlan0 | grep -q "inet "; do sleep 1; done'; then
         echo "Erreur de connexion au hotspot"
         exit 1
     fi
+    
     systemctl restart avahi-daemon
 }
 
@@ -45,8 +106,8 @@ if [ -f "${ROLE_FILE}" ]; then
 else
     # Logique de détection initiale
     echo "Recherche du hotspot ${HOTSPOT_SSID}..."
-    if nmcli device wifi list --rescan yes | grep -q "${HOTSPOT_SSID}" || \
-       timeout ${TIMEOUT} sh -c "until nmcli device wifi list | grep -q '${HOTSPOT_SSID}'; do sleep 1; done"; then
+    if iw dev wlan0 scan | grep -q "${HOTSPOT_SSID}" || \
+       timeout ${TIMEOUT} sh -c "until iw dev wlan0 scan | grep -q '${HOTSPOT_SSID}'; do sleep 1; done"; then
         echo "Hotspot trouvé, activation du mode node"
         activate_node
     else

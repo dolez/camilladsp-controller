@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Crée les répertoires nécessaires
-mkdir -p output cache
+mkdir -p output cache/apt cache/base build
 
 # Construction de l'image Docker
-docker  build -t dietpi-builder .
+docker build -t dietpi-builder .
 
 # Exécution avec les volumes
 docker run --rm --privileged \

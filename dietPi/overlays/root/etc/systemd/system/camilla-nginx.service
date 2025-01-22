@@ -1,0 +1,12 @@
+[Unit]
+Description=Camilla Nginx
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/nginx -g 'daemon off; master_process on;'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

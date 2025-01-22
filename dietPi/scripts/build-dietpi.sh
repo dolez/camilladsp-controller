@@ -4,21 +4,23 @@ set -e
 DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi-ARMv7-Bookworm.img.xz"
 CACHE_DIR="/cache"
 OUTPUT_DIR="/output"
-BASE_IMAGE="dietpi_base.img"
+BASE_IMAGE="${CACHE_DIR}/base/dietpi_base.img"
+BUILD_IMAGE="/build/dietpi.img"
 
 echo "🚀 Préparation de l'image DietPi optimisée..."
 
 # Gestion du cache de l'image
-if [ ! -f "${CACHE_DIR}/${BASE_IMAGE}" ]; then
+if [ ! -f "${BASE_IMAGE}" ]; then
     echo "📥 Téléchargement de l'image DietPi..."
-    wget -O "${CACHE_DIR}/dietpi.img.xz" "${DIETPI_URL}"
+    mkdir -p "$(dirname "${BASE_IMAGE}")"
+    wget -O "${CACHE_DIR}/base/dietpi.img.xz" "${DIETPI_URL}"
     echo "📦 Décompression de l'image..."
-    xz -d "${CACHE_DIR}/dietpi.img.xz"
-    mv "${CACHE_DIR}/dietpi.img" "${CACHE_DIR}/${BASE_IMAGE}"
+    xz -d "${CACHE_DIR}/base/dietpi.img.xz"
+    mv "${CACHE_DIR}/base/dietpi.img" "${BASE_IMAGE}"
 fi
 
 echo "📋 Copie de l'image de travail..."
-cp "${CACHE_DIR}/${BASE_IMAGE}" "/build/${BASE_IMAGE}"
+cp "${BASE_IMAGE}" "${BUILD_IMAGE}"
 
 # Nettoyage complet des périphériques loop
 echo "🧹 Nettoyage des périphériques loop..."
@@ -28,7 +30,7 @@ losetup -l
 
 # Montage de l'image avec un seul périphérique loop
 echo "💿 Montage de l'image..."
-LOOP_DEV=$(losetup --show -f "/build/${BASE_IMAGE}")
+LOOP_DEV=$(losetup --show -f "${BUILD_IMAGE}")
 echo "Périphérique loop: ${LOOP_DEV}"
 
 # Vérification que le périphérique est bien monté
@@ -60,11 +62,17 @@ echo "modules-load=dwc2,g_serial" >> /mnt/dietpi_boot/cmdline.txt
 cp -rp /overlays/root/* /mnt/dietpi_root/
 cp -rp /overlays/boot/* /mnt/dietpi_boot/
 
+# Montage des systèmes nécessaires
 mkdir -p /mnt/dietpi_root/dev
 mount --bind /dev /mnt/dietpi_root/dev
 mount --bind /dev/pts /mnt/dietpi_root/dev/pts
 mount -t proc proc /mnt/dietpi_root/proc
 mount -t sysfs sys /mnt/dietpi_root/sys
+
+# Montage du cache APT
+mkdir -p /mnt/dietpi_root/var/cache/apt/archives
+mkdir -p "${CACHE_DIR}/apt"
+mount --bind "${CACHE_DIR}/apt" /mnt/dietpi_root/var/cache/apt/archives
 
 echo "📦 Installation des paquets et configuration du système..."
 chroot /mnt/dietpi_root /bin/bash -c "
@@ -80,7 +88,9 @@ chroot /mnt/dietpi_root /bin/bash -c "
     # Installation de tous les paquets nécessaires
     apt-get install -y --no-install-recommends \
         alsa-utils \
-        network-manager \
+        hostapd \
+        dnsmasq \
+        wpasupplicant \
         avahi-daemon \
         nginx-light \
         curl \
@@ -115,12 +125,13 @@ chroot /mnt/dietpi_root /bin/bash -c "
     chmod +x /usr/local/bin/*
 
     # Activation des services essentiels
-    systemctl enable nginx
+    systemctl disable nginx
+    systemctl enable camilla-nginx.service
     systemctl enable avahi-daemon
     systemctl enable camilladsp-role.service
     systemctl enable fcgiwrap
     systemctl enable serial-getty@ttyGS0.service
-    systemctl enable NetworkManager.service
+    systemctl enable dnsmasq
     
     # Désactivation des services non nécessaires
     systemctl disable systemd-timesyncd.service
@@ -145,79 +156,99 @@ chroot /mnt/dietpi_root /bin/bash -c "
     systemctl disable fstrim.timer
     systemctl disable dropbear.service
     systemctl disable fake-hwclock.service
-    systemctl disable NetworkManager-wait-online.service
-rm -f /etc/systemd/system/network-online.target.wants/NetworkManager-wait-online.service
     systemctl disable console-setup.service
     systemctl disable serial-getty@serial0.service
     rm -f /etc/systemd/system/getty.target.wants/serial-getty@serial0.service
-    systemctl disable networking.service
-    rm -f /etc/systemd/system/network-online.target.wants/networking.service
-    rm -f /etc/systemd/system/multi-user.target.wants/networking.service    
     rm /etc/systemd/system/dietpi-firstboot.service
 
     # Nettoyage agressif
-    apt-get -y --purge remove gpgv gnupg triggerhappy bluetooth bluez
+    apt-get -y --purge remove \
+        gpgv \
+        gnupg \
+        triggerhappy \
+        bluetooth \
+        bluez \
+        dirmngr \
+        gpg \
+        gpg-agent \
+        wget \
+        firmware-atheros \
+        firmware-iwlwifi \
+        firmware-misc-nonfree
+        
     apt-get autoremove -y
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     rm -rf /usr/share/doc
     rm -rf /usr/share/man
-    rm -rf /var/cache/apt/*
-    rm -rf /var/log/*
     rm -rf /var/tmp/*
     rm -rf /tmp/*
     cd /usr/share/locale && ls | grep -v '^fr\|^en' | xargs rm -rf
 "
 
-# Get filesystem info
-USED_BLOCKS=$(dumpe2fs -h "/dev/mapper/${LOOP_BASE}p2" | grep "Block count" | awk '{print $3}')
-BLOCK_SIZE=$(dumpe2fs -h "/dev/mapper/${LOOP_BASE}p2" | grep "Block size" | awk '{print $3}')
-USED_SIZE=$((USED_BLOCKS * BLOCK_SIZE))
-
 # Démontage propre
+echo "🔄 Démontage des systèmes de fichiers..."
 umount /mnt/dietpi_root/dev/pts || true
 umount /mnt/dietpi_root/dev || true
 umount /mnt/dietpi_root/proc || true
 umount /mnt/dietpi_root/sys || true
+umount /mnt/dietpi_root/var/cache/apt/archives || true
 umount /mnt/dietpi_boot
 umount /mnt/dietpi_root
 
-# Get loop base name before detaching
+# Récupérer le nom de base du périphérique loop
 LOOP_BASE=$(basename ${LOOP_DEV})
 
-# Ajouter une marge de sécurité (par exemple 5%)
-MARGIN_SIZE=$((USED_SIZE / 20))
-TOTAL_NEEDED_SIZE=$((USED_SIZE + MARGIN_SIZE))
+# Constantes pour le redimensionnement
+FIXED_MARGIN_MB=100
+RPI_ALIGNMENT=$((4 * 1024 * 1024))  # 4MB alignement pour Raspberry Pi
 
-# Effectuer le redimensionnement
-echo "📏 Optimisation de la taille..."
+# 1. Vérifier et réparer le système de fichiers
+echo "🔍 Vérification du système de fichiers..."
 e2fsck -f -y "/dev/mapper/${LOOP_BASE}p2"
+
+# 2. Réduire le système de fichiers au minimum
+echo "📏 Réduction du système de fichiers..."
 resize2fs -M "/dev/mapper/${LOOP_BASE}p2"
 
-# Obtenir l'offset de la partition
-PART2_START=$(fdisk -l "/build/${BASE_IMAGE}" | grep "${BASE_IMAGE}2" | awk '{print $2}')
+# 3. Obtenir la nouvelle taille exacte du système de fichiers
+RESIZED_BLOCKS=$(dumpe2fs -h "/dev/mapper/${LOOP_BASE}p2" | grep "Block count" | awk '{print $3}')
+BLOCK_SIZE=$(dumpe2fs -h "/dev/mapper/${LOOP_BASE}p2" | grep "Block size" | awk '{print $3}')
+RESIZED_SIZE=$((RESIZED_BLOCKS * BLOCK_SIZE))
+
+# 4. Ajouter la marge et redimensionner à la nouvelle taille
+MARGIN_BYTES=$((FIXED_MARGIN_MB * 1024 * 1024))
+NEW_FS_SIZE=$((RESIZED_SIZE + MARGIN_BYTES))
+echo "📏 Redimensionnement avec marge à $((NEW_FS_SIZE / 1024 / 1024))MB..."
+resize2fs "/dev/mapper/${LOOP_BASE}p2" "$((NEW_FS_SIZE / 1024))K"
+
+# 5. Obtenir l'offset de début de la partition 2
+PART2_START=$(fdisk -l "${LOOP_DEV}" | grep "${LOOP_DEV}p2" | awk '{print $2}')
 PART2_START_BYTES=$((PART2_START * 512))
 
-# Calculer la nouvelle taille totale (début de partition + taille nécessaire)
-NEW_SIZE=$((PART2_START_BYTES + TOTAL_NEEDED_SIZE))
+# 6. Calculer la taille totale nécessaire
+NEW_SIZE=$((PART2_START_BYTES + NEW_FS_SIZE))
 
-# Tronquer l'image
-# truncate -s "${NEW_SIZE}" "/build/${BASE_IMAGE}"
+# 7. Arrondir au multiple de 4MB supérieur pour la compatibilité RPi
+NEW_SIZE=$(( (NEW_SIZE + RPI_ALIGNMENT - 1) & ~(RPI_ALIGNMENT - 1) ))
 
-# Information sur la taille finale
-echo "📊 Taille finale du système de fichiers :"
-du -h "/build/${BASE_IMAGE}"
-
-# Get filesystem info
-echo "📊 Taille finale du système de fichiers :"
-dumpe2fs -h "/dev/mapper/${LOOP_BASE}p2" | grep "Block size\|Block count"
-
-# Then cleanup
+# 8. Détacher les mappings de partition
+echo "🔧 Détachement des mappings de partition..."
 kpartx -d "${LOOP_DEV}"
+
+# 9. Tronquer l'image
+echo "✂️ Troncature de l'image à $(( NEW_SIZE / 1024 / 1024 ))MB..."
+truncate -s "${NEW_SIZE}" "${BUILD_IMAGE}"
+
+# 10. Détacher le périphérique loop
+echo "🔄 Détachement du périphérique loop..."
 losetup -d "${LOOP_DEV}"
+
+# Afficher les informations finales
+echo "📊 Taille finale de l'image : $(du -h "${BUILD_IMAGE}" | cut -f1)"
 
 # Compression finale
 echo "🗜️ Compression de l'image..."
-pigz -9 < "/build/${BASE_IMAGE}" > "${OUTPUT_DIR}/camilladsp-dietpi.img.gz"
+pigz -9 < "${BUILD_IMAGE}" > "${OUTPUT_DIR}/camilladsp-dietpi.img.gz"
 
 echo "✅ Image optimisée générée: ${OUTPUT_DIR}/camilladsp-dietpi.img.gz"

@@ -28,7 +28,7 @@ filters:
     description: null
     parameters:
       channel: 1
-      filename: ../coeffs/1 Halls 16 Amsterdam Hall  M-to-S.wav
+      filename: ../coeffs/coeffs1.wav
       type: Wav
     type: Conv
   Delai:
@@ -83,31 +83,31 @@ mixers:
             scale: dB
 pipeline:
   - bypassed: null
-    channel: 0
+    channels: [0]
     description: null
     names:
       - Limiteur
     type: Filter
   - bypassed: null
-    channel: 0
+    channels: [0]
     description: null
     names:
       - "Passe bas d'entr\xE9e"
     type: Filter
   - bypassed: null
-    channel: 0
+    channels: [0]
     description: null
     names:
       - Delai
     type: Filter
   - bypassed: null
-    channel: 0
+    channels: [0]
     description: null
     names:
       - Convolution
     type: Filter
   - bypassed: null
-    channel: 0
+    channels: [0]
     description: null
     names:
       - Passe bas de sortie

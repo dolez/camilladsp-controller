@@ -1,0 +1,13 @@
+config_path: configs/mfh.yml
+mute:
+  - false
+  - false
+  - false
+  - false
+  - false
+volume:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0

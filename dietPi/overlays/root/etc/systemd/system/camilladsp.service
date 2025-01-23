@@ -5,7 +5,7 @@ Wants=network.target
 
 [Service]
 WorkingDirectory=/var/camilladsp
-ExecStart=/usr/local/bin/camilladsp -s statefile.yml -o logs/camilladsp.log -c configs/mfh.yml -p 1234
+ExecStart=/usr/local/bin/camilladsp -s statefile.yml -p 1234
 Restart=always
 User=root
 

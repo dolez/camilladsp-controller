@@ -34,17 +34,26 @@ update_nodes_file() {
 
     echo "$temp_output" | \
     awk -F';' '/^=/ {
-        gsub(/"/, "\\\"", $4); # Échapper les guillemets dans les noms
-        gsub(/"/, "\\\"", $7); # Échapper les guillemets dans le hostname
-        name = ($4 == "" ? "null" : "\"" $4 "\"");
-        host = ($7 == "" ? "null" : "\"" $7 "\"");
-        ip = ($8 == "" ? "null" : "\"" $8 "\"");
+        # Convertir les \032 en espaces
+        gsub(/\\032/, " ", $4);  # Nom
+        gsub(/\\032/, " ", $7);  # Hostname
+        
+        # Échapper les guillemets
+        gsub(/"/, "\\\"", $4);
+        gsub(/"/, "\\\"", $7);
+        
+        # Préparer les champs
+        name = ($4 == "" ? "null" : "\""$4"\"");
+        host = ($7 == "" ? "null" : "\""$7"\"");
+        ip = ($8 == "" ? "null" : "\""$8"\"");
         port = ($9 == "" || $9 !~ /^[0-9]+$/ ? "null" : $9);
-        interface = ($2 == "" ? "null" : "\"" $2 "\"");
-        protocol = ($3 == "" ? "null" : "\"" $3 "\"");
-        print "{\"name\":" name ",\"host\":" host ",\"ip\":" ip ",\"port\":" port ",\"interface\":" interface ",\"protocol\":" protocol "}"
+        interface = ($2 == "" ? "null" : "\""$2"\"");
+        protocol = ($3 == "" ? "null" : "\""$3"\"");
+        
+        printf "{\"name\":%s,\"host\":%s,\"ip\":%s,\"port\":%s,\"interface\":%s,\"protocol\":%s}\n",
+            name, host, ip, port, interface, protocol
     }' | \
-    jq -c '{"nodes":.}' > "$NODES_FILE"
+    jq -c '{"nodes":[inputs]}' > "$NODES_FILE"
 }
 
 # Initialiser le fichier nodes

@@ -121,6 +121,9 @@ chroot /mnt/dietpi_root /bin/bash -c "
     echo "root:camilladsp" | chpasswd
     echo "dietpi:camilladsp" | chpasswd
 
+    # Suppression default nginx
+    rm -rf /etc/nginx/sites-enabled/default
+
     # Téléchargement et installation de CamillaDSP
     mkdir -p /opt/camilladsp
     curl -L https://github.com/HEnquist/camilladsp/releases/download/v3.0.0/camilladsp-linux-armv7.tar.gz | tar xz -C /opt/camilladsp
@@ -152,7 +155,6 @@ chroot /mnt/dietpi_root /bin/bash -c "
     systemctl disable dietpi-kill_ssh.service
     systemctl disable dpkg-db-backup.timer
     systemctl disable fstrim.timer
-    systemctl disable dropbear.service
     systemctl disable fake-hwclock.service
     systemctl disable console-setup.service
     systemctl disable dietpi-kill_ssh.service
@@ -176,12 +178,15 @@ chroot /mnt/dietpi_root /bin/bash -c "
         gpg \
         gpg-agent \
         wget \
-        dropbear \
         firmware-atheros \
         firmware-iwlwifi \
         firmware-misc-nonfree
         
     apt-get autoremove -y
+    
+    # Démonter le cache APT avant le nettoyage final
+    umount /var/cache/apt/archives || true
+    
     apt-get clean
     rm -rf /var/lib/apt/lists/*
     rm -rf /usr/share/doc
@@ -197,7 +202,6 @@ umount /mnt/dietpi_root/dev/pts || true
 umount /mnt/dietpi_root/dev || true
 umount /mnt/dietpi_root/proc || true
 umount /mnt/dietpi_root/sys || true
-umount /mnt/dietpi_root/var/cache/apt/archives || true
 umount /mnt/dietpi_boot
 umount /mnt/dietpi_root
 

@@ -92,6 +92,7 @@ chroot /mnt/dietpi_root /bin/bash -c "
         dnsmasq \
         wpasupplicant \
         avahi-daemon \
+        avahi-utils \
         nginx-light \
         curl \
         jq \
@@ -112,6 +113,9 @@ chroot /mnt/dietpi_root /bin/bash -c "
     # Forcer la configuration dans /etc/console-setup/cached_setup_keyboard.sh
     sed -i 's/XKBLAYOUT=.*/XKBLAYOUT="fr"/' /etc/console-setup/cached_setup_keyboard.sh
 
+    # Suppression logs nginx
+    sed -i 's|error_log /var/log/nginx/error.log.*|error_log /dev/null;|' /etc/nginx/nginx.conf
+    sed -i 's|access_log /var/log/nginx/access.log.*|access_log off;|' /etc/nginx/nginx.conf
 
     # Configuration du mot de passe root et dietpi
     echo "root:camilladsp" | chpasswd
@@ -172,6 +176,7 @@ chroot /mnt/dietpi_root /bin/bash -c "
         gpg \
         gpg-agent \
         wget \
+        dropbear \
         firmware-atheros \
         firmware-iwlwifi \
         firmware-misc-nonfree

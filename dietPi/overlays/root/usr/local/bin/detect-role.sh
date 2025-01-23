@@ -50,8 +50,8 @@ EOF
     # Démarrage des services
     systemctl restart dnsmasq
     systemctl restart hostapd
-    
     systemctl restart avahi-daemon
+    systemctl start camilladsp-monitor.service
 }
 
 # Fonction pour activer le rôle node

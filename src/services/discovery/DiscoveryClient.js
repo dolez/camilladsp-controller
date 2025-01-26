@@ -18,7 +18,7 @@ export class DiscoveryClient {
       this.updateNodes(data.nodes.filter((n) => n.interface === "wlan0"));
 
       // Mise en place de l'écoute SSE
-      this.eventSource = new EventSource(`/events`);
+      this.eventSource = new EventSource(`/api/events`);
 
       this.eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);

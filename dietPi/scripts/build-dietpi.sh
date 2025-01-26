@@ -97,7 +97,8 @@ chroot /mnt/dietpi_root /bin/bash -c "
         curl \
         jq \
         socat \
-        fcgiwrap
+        fcgiwrap \
+        dropbear 
 
     # Reconfigurer les paquets clavier
     dpkg-reconfigure -f noninteractive keyboard-configuration
@@ -132,40 +133,53 @@ chroot /mnt/dietpi_root /bin/bash -c "
     chmod +x /usr/local/bin/*
 
     # Activation des services essentiels
-    systemctl disable nginx
+    systemctl disable nginx.service
     systemctl enable camilla-nginx.service
-    systemctl enable avahi-daemon
+    systemctl enable avahi-daemon.service
     systemctl enable camilladsp-role.service
-    systemctl enable fcgiwrap
+    systemctl enable fcgiwrap.service
     systemctl enable serial-getty@ttyGS0.service
-    systemctl enable dnsmasq
-    
+    systemctl enable dnsmasq.service
+    systemctl enable alsa-restore.service
+    systemctl enable alsa-store.service
+        
     # Désactivation des services non nécessaires
-    systemctl disable systemd-timesyncd.service
+    systemctl disable systemd-timesyncd
     systemctl disable apt-daily.timer
     systemctl disable apt-daily-upgrade.timer
-    systemctl disable dietpi-firstboot.service
-    systemctl disable dietpi-cloudshell.service
-    systemctl disable dietpi-fs_partition_resize.service
-    systemctl disable dietpi-postboot.service
-    systemctl disable dietpi-preboot.service
-    systemctl disable dietpi-ramlog.service
-    systemctl disable dietpi-vpn.service
-    systemctl disable dietpi-wifi-monitor.service
-    systemctl disable dietpi-kill_ssh.service
+    systemctl disable dietpi-firstboot
+    systemctl disable dietpi-cloudshell
+    systemctl disable dietpi-fs_partition_resize
+    systemctl disable dietpi-postboot
+    systemctl disable dietpi-preboot
+    systemctl disable dietpi-ramlog
+    systemctl disable dietpi-vpn
+    systemctl disable dietpi-wifi-monitor
+    systemctl disable dietpi-kill_ssh
     systemctl disable dpkg-db-backup.timer
     systemctl disable fstrim.timer
-    systemctl disable fake-hwclock.service
-    systemctl disable console-setup.service
-    systemctl disable dietpi-kill_ssh.service
+    systemctl disable fake-hwclock
+    systemctl disable console-setup
+    systemctl disable dietpi-kill_ssh
     systemctl disable dpkg-db-backup.timer
     systemctl disable fstrim.timer
-    systemctl disable dropbear.service
     systemctl disable fake-hwclock.service
     systemctl disable console-setup.service
     systemctl disable serial-getty@serial0.service
     rm -f /etc/systemd/system/getty.target.wants/serial-getty@serial0.service
     rm /etc/systemd/system/dietpi-firstboot.service
+
+    # Configuration de dropbear pour dietpi uniquement
+    mkdir -p /etc/dropbear
+    # Supprimer les clés existantes avant d'en générer de nouvelles
+    rm -f /etc/dropbear/dropbear_*_host_key
+    dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+    
+    # Ajouter dietpi au groupe sudo
+    usermod -aG sudo dietpi
+    
+    # Activer dropbear
+    systemctl enable dropbear.service
 
     # Nettoyage agressif
     apt-get -y --purge remove \
@@ -180,8 +194,11 @@ chroot /mnt/dietpi_root /bin/bash -c "
         wget \
         firmware-atheros \
         firmware-iwlwifi \
-        firmware-misc-nonfree
-        
+        firmware-misc-nonfree \
+
+    # Garder uniquement les fichiers essentiels de dropbear
+    rm -rf /usr/share/doc/dropbear*
+
     apt-get autoremove -y
     
     # Démonter le cache APT avant le nettoyage final

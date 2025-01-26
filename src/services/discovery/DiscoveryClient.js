@@ -1,4 +1,3 @@
-import io from "socket.io-client";
 import { signal } from "@preact/signals";
 
 export const discoveryState = signal({
@@ -7,47 +6,81 @@ export const discoveryState = signal({
 
 export class DiscoveryClient {
   constructor() {
-    this.socket = null;
+    this.eventSource = null;
     this.onNodesUpdate = null;
   }
 
-  connect() {
-    const url =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : window.location.origin;
+  async connect() {
+    try {
+      // Récupération initiale des noeuds
+      const response = await fetch(`/api/nodes`);
+      const data = await response.json();
+      this.updateNodes(data.nodes.filter((n) => n.interface === "wlan0"));
 
-    this.socket = io(url, {
-      transports: ["websocket"],
-      upgrade: false,
-    });
+      // Mise en place de l'écoute SSE
+      this.eventSource = new EventSource(`/events`);
 
-    this.socket.on("avahi-services", (services) => {
-      console.log("Received services:", services);
-      discoveryState.value = {
-        nodes: new Map(
-          services.map((node) => [`${node.address}:${node.port}`, node])
-        ),
+      this.eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.event === "connected" && data.interface === "wlan0") {
+          const nodeKey = `${data.ip}`;
+          const nodes = new Map(discoveryState.value.nodes);
+          nodes.set(nodeKey, {
+            name: data.name,
+            address: data.ip,
+            port: data.port,
+            host: data.host,
+          });
+          discoveryState.value = { nodes };
+        } else if (data.event === "disconnected") {
+          const nodes = new Map(discoveryState.value.nodes);
+          // On cherche le noeud par son nom car on n'a pas l'IP dans l'événement de déconnexion
+          for (const [key, node] of nodes.entries()) {
+            if (node.name === data.name) {
+              nodes.delete(key);
+              break;
+            }
+          }
+          discoveryState.value = { nodes };
+        }
+
+        if (this.onNodesUpdate) {
+          this.onNodesUpdate(Array.from(discoveryState.value.nodes.values()));
+        }
       };
 
-      if (this.onNodesUpdate) {
-        this.onNodesUpdate(services);
-      }
-    });
+      this.eventSource.onerror = (error) => {
+        console.error("SSE connection error:", error);
+      };
+    } catch (error) {
+      console.error("Failed to initialize discovery client:", error);
+    }
+  }
 
-    this.socket.on("connect", () => {
-      console.log("Connected to discovery server");
-    });
+  updateNodes(nodes) {
+    const nodesMap = new Map(
+      nodes.map((node) => [
+        node.ip,
+        {
+          name: node.name,
+          address: node.ip,
+          port: node.port,
+          host: node.host,
+        },
+      ])
+    );
+    discoveryState.value = { nodes: nodesMap };
 
-    this.socket.on("connect_error", (error) => {
-      console.error("Discovery server connection error:", error);
-    });
+    if (this.onNodesUpdate) {
+      this.onNodesUpdate(Array.from(nodesMap.values()));
+    }
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
     }
   }
 }

@@ -8,9 +8,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "../../ui/Select";
-import { getNodeId } from "../../../services/camilla/CamillaContext";
 
 export function ConvolutionFileSelect({
   value,
@@ -25,7 +23,6 @@ export function ConvolutionFileSelect({
   const [isHovered, setIsHovered] = useState(false);
   const textRef = useRef(null);
   const containerRef = useRef(null);
-  const nodeId = getNodeId(node.address, node.port);
 
   useEffect(() => {
     if (isHovered && textRef.current && containerRef.current) {
@@ -41,7 +38,7 @@ export function ConvolutionFileSelect({
   }, [isHovered, value]);
 
   const formatFilePath = (filename) => {
-    return `/home/pi/camilladsp/coeffs/${filename}`;
+    return `/var/camilladsp/coeffs/${filename}`;
   };
 
   const handleFileSelect = () => {
@@ -53,14 +50,14 @@ export function ConvolutionFileSelect({
       const file = e.target.files[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append("file", file);
-
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/upload/${nodeId}`, {
+        const response = await fetch(`http://${node.address}/api/upload`, {
           method: "POST",
-          body: formData,
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
         });
 
         if (response.ok) {

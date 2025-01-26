@@ -97,10 +97,10 @@ export function useCamillaNode(address, port) {
 
   const loadConvolutionFiles = async () => {
     try {
-      const response = await fetch(`/api/files/${nodeId}`);
+      const response = await fetch(`http://${address}/api/files/`);
       if (!response.ok) throw new Error("Failed to fetch files");
       const files = await response.json();
-      updateState({ convolutionFiles: files });
+      updateState({ convolutionFiles: files.map((f) => f.name) });
     } catch (error) {
       console.error("Error loading convolution files:", error);
       updateState({ convolutionFiles: [] });

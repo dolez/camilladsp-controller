@@ -1,0 +1,12 @@
+[Unit]
+Description=Store ALSA Settings
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/alsactl store
+RemainAfterExit=yes
+
+[Install]
+WantedBy=shutdown.target reboot.target halt.target

@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-NODE_NAME="$NODE_NAME"
-UPLOAD_DIR="/tmp/uploads"
+UPLOAD_DIR="/var/www/camilladsp/coeffs"
 
 # Créer le répertoire si nécessaire
 mkdir -p "$UPLOAD_DIR"

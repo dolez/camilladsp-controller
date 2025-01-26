@@ -1,57 +1,57 @@
 description: null
 devices:
-  adjust_period: null
+  adjust_period: 10
   capture:
     channels: 2
     device: hw:CARD=wm8960soundcard,DEV=0
     format: S16LE
     type: Alsa
   capture_samplerate: 48000
-  chunksize: 300
-  enable_rate_adjust: null
+  chunksize: 1024
+  enable_rate_adjust: true
   playback:
     channels: 2
     device: hw:CARD=wm8960soundcard,DEV=0
     format: S16LE
     type: Alsa
-  queuelimit: null
+  queuelimit: 2048
   rate_measure_interval: null
   resampler: null
-  samplerate: 44100
+  samplerate: 48000
   silence_threshold: null
   silence_timeout: null
   stop_on_rate_change: null
-  target_level: null
+  target_level: 1024
   volume_ramp_time: null
 filters:
-  Convolution:
+  convolution:
     description: null
     parameters:
       channel: 1
       filename: ../coeffs/coeffs1.wav
       type: Wav
     type: Conv
-  Delai:
+  delay:
     description: null
     parameters:
       delay: 0
       subsample: false
       unit: ms
     type: Delay
-  Limiteur:
+  limiter:
     description: null
     parameters:
       clip_limit: -3
       soft_clip: true
     type: Limiter
-  "Passe bas d'entr\xE9e":
+  input-lowpass:
     description: null
     parameters:
       freq: 800
       order: 2
       type: ButterworthLowpass
     type: BiquadCombo
-  Passe bas de sortie:
+  output-lowpass:
     description: null
     parameters:
       freq: 2000
@@ -86,31 +86,31 @@ pipeline:
     channels: [0]
     description: null
     names:
-      - Limiteur
+      - limiter
     type: Filter
   - bypassed: null
     channels: [0]
     description: null
     names:
-      - "Passe bas d'entr\xE9e"
+      - input-lowpass
     type: Filter
   - bypassed: null
     channels: [0]
     description: null
     names:
-      - Delai
+      - delay
     type: Filter
   - bypassed: null
     channels: [0]
     description: null
     names:
-      - Convolution
+      - convolution
     type: Filter
   - bypassed: null
     channels: [0]
     description: null
     names:
-      - Passe bas de sortie
+      - output-lowpass
     type: Filter
   - bypassed: null
     description: null

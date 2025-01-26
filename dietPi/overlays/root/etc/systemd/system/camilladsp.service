@@ -1,13 +1,15 @@
 [Unit]
 Description=CamillaDSP Audio Processing
-After=sound.target network.target camilladsp-role.service
-Wants=network.target
+After=sound.target
 
 [Service]
+Type=simple
+ExecStart=/usr/local/bin/camilladsp -s /var/camilladsp/statefile.yml -p 1234
 WorkingDirectory=/var/camilladsp
-ExecStart=/usr/local/bin/camilladsp -s statefile.yml -p 1234
 Restart=always
+RestartSec=1
 User=root
 
 [Install]
-WantedBy=multi-user.target 
+WantedBy=multi-user.target
+EOF

@@ -26,6 +26,14 @@ trap cleanup EXIT INT TERM
     printf "\r\n"
 } >&3
 
+# Démarrer le heartbeat en arrière-plan
+(
+    while true; do
+        echo "data: {\"event\":\"heartbeat\"}\n\n" > "$client_fifo"
+        sleep 30
+    done
+) &
+
 # Fonction pour le distributeur d'événements
 run_distributor() {
     local main_fifo="$1"

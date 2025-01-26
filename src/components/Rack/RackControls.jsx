@@ -1,4 +1,3 @@
-import { h } from "preact";
 import { Knob } from "./controls/Knob";
 import { ConvolutionFileSelect } from "./controls/ConvolutionFileSelect";
 import { VuMeter } from "./controls/VuMeter";
@@ -30,23 +29,23 @@ export function RackControls({
   }
 
   const handleLimiterChange = (value) => {
-    onConfigChange("Limiteur.clip_limit", value);
+    onConfigChange("limiter.clip_limit", value);
   };
 
   const handleDelayChange = (value) => {
-    onConfigChange("Delai.delay", value);
+    onConfigChange("delay.delay", value);
   };
 
   const handleConvFileChange = (value) => {
-    onConfigChange("Convolution.filename", value);
+    onConfigChange("convolution.filename", value);
   };
 
   const handlePasseBasEntreeChange = (value) => {
-    onConfigChange("Passe bas d'entrée.freq", value);
+    onConfigChange("input-lowpass.freq", value);
   };
 
   const handlePasseBasSortieChange = (value) => {
-    onConfigChange("Passe bas de sortie.freq", value);
+    onConfigChange("output-lowpass.freq", value);
   };
 
   const handleGainChange = (value) => {
@@ -70,7 +69,7 @@ export function RackControls({
       <ControlFieldset legend="Limiter">
         <Knob
           label="Threshold"
-          value={config.filters.Limiteur.parameters.clip_limit}
+          value={config.filters.limiter.parameters.clip_limit}
           onChange={handleLimiterChange}
           min={-60}
           max={0}
@@ -80,10 +79,10 @@ export function RackControls({
         />
       </ControlFieldset>
 
-      <ControlFieldset legend="Passe bas entree">
+      <ControlFieldset legend="Input Lowpass">
         <Knob
           label="Freq"
-          value={config.filters["Passe bas d'entrée"].parameters.freq}
+          value={config.filters["input-lowpass"].parameters.freq}
           onChange={handlePasseBasEntreeChange}
           min={20}
           max={20000}
@@ -96,7 +95,7 @@ export function RackControls({
       <ControlFieldset legend="Delay">
         <Knob
           label="Time"
-          value={config.filters.Delai.parameters.delay}
+          value={config.filters.delay.parameters.delay}
           onChange={handleDelayChange}
           min={0}
           max={1000}
@@ -109,7 +108,7 @@ export function RackControls({
       <ControlFieldset legend="Convolution">
         <ConvolutionFileSelect
           label="IR File"
-          value={config.filters.Convolution.parameters.filename}
+          value={config.filters.convolution.parameters.filename}
           onChange={handleConvFileChange}
           node={node}
           files={state.convolutionFiles}
@@ -117,10 +116,10 @@ export function RackControls({
         />
       </ControlFieldset>
 
-      <ControlFieldset legend="Passe bas sortie">
+      <ControlFieldset legend="Output Lowpass">
         <Knob
           label="Freq"
-          value={config.filters["Passe bas de sortie"].parameters.freq}
+          value={config.filters["output-lowpass"].parameters.freq}
           onChange={handlePasseBasSortieChange}
           min={20}
           max={20000}

@@ -69,7 +69,14 @@ avahi-browse --parsable --resolve --no-db-lookup _camilladsp._tcp | while read -
         '=') # Service résolu avec détails
             update_nodes_file
             json_event=$(echo "$line" | awk -F';' '{
-                gsub(/"/, "\\\"", $4); # name est dans $4 (TestCamillaDSP)
+                # Convertir les \032 en espaces
+                gsub(/\\032/, " ", $4);  # Nom
+                gsub(/\\032/, " ", $7);  # Hostname
+                
+                # Échapper les guillemets
+                gsub(/"/, "\\\"", $4);
+                gsub(/"/, "\\\"", $7);
+        
                 printf "{\"event\":\"connected\",\"interface\":\"%s\",\"protocol\":\"%s\",\"name\":\"%s\",\"host\":\"%s\",\"ip\":\"%s\",\"port\":%s}",
                 $2, $3, $4, $7, $8, $9
             }')
@@ -77,7 +84,14 @@ avahi-browse --parsable --resolve --no-db-lookup _camilladsp._tcp | while read -
         '-') # Service déconnecté
             update_nodes_file
             json_event=$(echo "$line" | awk -F';' '{
+                # Convertir les \032 en espaces
+                gsub(/\\032/, " ", $4);  # Nom
+                gsub(/\\032/, " ", $7);  # Hostname
+                
+                # Échapper les guillemets
                 gsub(/"/, "\\\"", $4);
+                gsub(/"/, "\\\"", $7);
+        
                 printf "{\"event\":\"disconnected\",\"interface\":\"%s\",\"protocol\":\"%s\",\"name\":\"%s\"}",
                 $2, $3, $4
             }')

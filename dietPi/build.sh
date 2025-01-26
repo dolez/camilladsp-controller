@@ -13,4 +13,5 @@ docker run --rm --privileged \
     -v "$(pwd)/scripts:/scripts" \
     -v "$(pwd)/overlays:/overlays" \
     -v "$(pwd)/build:/build" \
-    dietpi-builder
+    --entrypoint /scripts/build-dietpi.sh \
+    dietpi-builder "$@"

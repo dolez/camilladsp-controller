@@ -115,7 +115,3 @@ else
         activate_master
     fi
 fi
-
-# Démarrage des services communs
-systemctl enable --now camilladsp
-systemctl enable --now nginx

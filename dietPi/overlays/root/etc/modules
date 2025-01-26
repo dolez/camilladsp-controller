@@ -6,6 +6,5 @@
 
 i2c-dev
 snd-soc-wm8960
-snd-soc-wm8960-soundcard
 dwc2
 g_serial

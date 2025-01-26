@@ -1,13 +1,14 @@
 [Unit]
 Description=CamillaDSP Audio Processing
-After=sound.target
+Requires=sound.target systemd-udevd.service
+After=sound.target systemd-udevd.service systemd-modules-load.service
+ConditionPathExists=/dev/snd/controlC0
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/camilladsp -s /var/camilladsp/statefile.yml -p 1234
+ExecStart=/usr/local/bin/camilladsp -s /var/camilladsp/statefile.yml -p 1234 -a 0.0.0.0 
 WorkingDirectory=/var/camilladsp
-Restart=always
-RestartSec=1
+Restart=on-failure
 User=root
 
 [Install]

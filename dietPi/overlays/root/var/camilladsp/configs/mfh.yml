@@ -28,7 +28,7 @@ filters:
     description: null
     parameters:
       channel: 1
-      filename: ../coeffs/coeffs1.wav
+      filename: /var/camilladsp/coeffs/coeffs1.wav
       type: Wav
     type: Conv
   delay:

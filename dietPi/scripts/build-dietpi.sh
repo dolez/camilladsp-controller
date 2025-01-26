@@ -1,19 +1,56 @@
 #!/bin/bash
 set -e
+echo "Arguments reçus: $@"
 
+# Définition des URLs
 DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi-ARMv7-Bookworm.img.xz"
+RADXA_URL="https://dietpi.com/downloads/images/DietPi_RadxaZERO3-ARMv8-Bookworm.img.xz"
 CACHE_DIR="/cache"
 OUTPUT_DIR="/output"
 BASE_IMAGE="${CACHE_DIR}/base/dietpi_base.img"
 BUILD_IMAGE="/build/dietpi.img"
 
-echo "🚀 Préparation de l'image DietPi optimisée..."
+# Gestion des paramètres
+BOARD="rpi"
+echo "Board initial: $BOARD"
+
+while getopts "b:" opt; do
+  case $opt in
+    b)
+      BOARD="$OPTARG"
+      echo "Board après option: $BOARD"
+      ;;
+    \?)
+      echo "Usage: $0 [-b board] (board: rpi ou radxa)"
+      exit 1
+      ;;
+  esac
+done
+
+echo "Board final: $BOARD"
+
+# Sélection de l'URL en fonction du board
+case $BOARD in
+  "rpi")
+    IMAGE_URL="$DIETPI_URL"
+    echo "🚀 Préparation de l'image DietPi pour Raspberry Pi..."
+    ;;
+  "radxa")
+    IMAGE_URL="$RADXA_URL"
+    echo "🚀 Préparation de l'image DietPi pour Radxa Zero 3..."
+    ;;
+  *)
+    echo "❌ Board non supporté: $BOARD"
+    echo "Boards supportés: rpi, radxa"
+    exit 1
+    ;;
+esac
 
 # Gestion du cache de l'image
 if [ ! -f "${BASE_IMAGE}" ]; then
     echo "📥 Téléchargement de l'image DietPi..."
     mkdir -p "$(dirname "${BASE_IMAGE}")"
-    wget -O "${CACHE_DIR}/base/dietpi.img.xz" "${DIETPI_URL}"
+    wget -O "${CACHE_DIR}/base/dietpi.img.xz" "${IMAGE_URL}"
     echo "📦 Décompression de l'image..."
     xz -d "${CACHE_DIR}/base/dietpi.img.xz"
     mv "${CACHE_DIR}/base/dietpi.img" "${BASE_IMAGE}"
@@ -137,11 +174,10 @@ chroot /mnt/dietpi_root /bin/bash -c "
     systemctl enable camilla-nginx.service
     systemctl enable avahi-daemon.service
     systemctl enable camilladsp-role.service
+    systemctl enable camilladsp.service
     systemctl enable fcgiwrap.service
     systemctl enable serial-getty@ttyGS0.service
     systemctl enable dnsmasq.service
-    systemctl enable alsa-restore.service
-    systemctl enable alsa-store.service
         
     # Désactivation des services non nécessaires
     systemctl disable systemd-timesyncd
@@ -176,7 +212,7 @@ chroot /mnt/dietpi_root /bin/bash -c "
     dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
     
     # Ajouter dietpi au groupe sudo
-    usermod -aG sudo dietpi
+    usermod -aG sudo,audio dietpi
     
     # Activer dropbear
     systemctl enable dropbear.service
@@ -275,6 +311,6 @@ echo "📊 Taille finale de l'image : $(du -h "${BUILD_IMAGE}" | cut -f1)"
 
 # Compression finale
 echo "🗜️ Compression de l'image..."
-pigz -9 < "${BUILD_IMAGE}" > "${OUTPUT_DIR}/camilladsp-dietpi.img.gz"
+pigz -9 < "${BUILD_IMAGE}" > "${OUTPUT_DIR}/camilladsp-${BOARD}.img.gz"
 
-echo "✅ Image optimisée générée: ${OUTPUT_DIR}/camilladsp-dietpi.img.gz"
+echo "✅ Image optimisée générée: ${OUTPUT_DIR}/camilladsp-${BOARD}.img.gz"

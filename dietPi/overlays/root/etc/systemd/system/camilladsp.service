@@ -2,7 +2,6 @@
 Description=CamillaDSP Audio Processing
 Requires=sound.target systemd-udevd.service
 After=sound.target systemd-udevd.service systemd-modules-load.service
-ConditionPathExists=/dev/snd/controlC0
 
 [Service]
 Type=simple

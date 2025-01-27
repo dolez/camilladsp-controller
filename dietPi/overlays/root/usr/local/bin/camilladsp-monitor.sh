@@ -53,7 +53,7 @@ update_nodes_file() {
         printf "{\"name\":%s,\"host\":%s,\"ip\":%s,\"port\":%s,\"interface\":%s,\"protocol\":%s}\n",
             name, host, ip, port, interface, protocol
     }' | \
-    jq -c '{"nodes":[inputs]}' > "$NODES_FILE"
+    jq -c '{"nodes":[.]}' > "$NODES_FILE"
 }
 
 # Initialiser le fichier nodes

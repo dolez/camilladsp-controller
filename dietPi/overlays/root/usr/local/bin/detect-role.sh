@@ -4,8 +4,6 @@ set -e
 TIMEOUT=10
 HOTSPOT_SSID="CamillaDSP"
 ROLE_FILE="/var/lib/camilladsp/role"
-HOSTAPD_CONF="/etc/hostapd/hostapd.conf"
-WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
 
 mkdir -p /var/lib/camilladsp
 
@@ -26,20 +24,6 @@ activate_master() {
     # Configuration du hostname
     hostnamectl set-hostname dietpi
     echo "127.0.1.1 dietpi.local dietpi" >> /etc/hosts
-    
-    # Configuration de hostapd
-    cat > "${HOSTAPD_CONF}" << EOF
-interface=wlan0
-driver=nl80211
-ssid=${HOTSPOT_SSID}
-hw_mode=g
-channel=7
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=0
-EOF
     
     # Configuration du réseau
     ip link set wlan0 down
@@ -64,18 +48,6 @@ activate_node() {
     hostnamectl set-hostname "${UNIQUE_HOSTNAME}"
     echo "127.0.1.1 ${UNIQUE_HOSTNAME}.local ${UNIQUE_HOSTNAME}" >> /etc/hosts
     
-    # Configuration de wpa_supplicant
-    cat > "${WPA_CONF}" << EOF
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=FR
-
-network={
-    ssid="${HOTSPOT_SSID}"
-    key_mgmt=NONE
-}
-EOF
-    
     # Arrêt des services master si actifs
     systemctl stop hostapd dnsmasq || true
     
@@ -85,13 +57,9 @@ EOF
     ip link set wlan0 up
     
     # Démarrage de wpa_supplicant et attente de connexion
-    wpa_supplicant -B -i wlan0 -c "${WPA_CONF}"
-    if ! timeout ${TIMEOUT} sh -c 'until ip addr show wlan0 | grep -q "inet "; do sleep 1; done'; then
-        echo "Erreur de connexion au hotspot"
-        exit 1
-    fi
-    
+    systemctl restart wpa_supplicant
     systemctl restart avahi-daemon
+    dhclient wlan0 
 }
 
 # Vérifier d'abord si un rôle existe déjà

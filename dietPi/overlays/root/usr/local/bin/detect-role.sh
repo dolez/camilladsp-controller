@@ -57,9 +57,10 @@ activate_node() {
     ip link set wlan0 up
     
     # Démarrage de wpa_supplicant et attente de connexion
-    systemctl restart wpa_supplicant
-    systemctl restart avahi-daemon
+    wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf 
     dhclient wlan0 
+    sleep 2
+    systemctl restart avahi-daemon
 }
 
 # Vérifier d'abord si un rôle existe déjà

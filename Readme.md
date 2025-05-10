@@ -1,11 +1,46 @@
-first install pi dependencies:
-
+## Create image
+needs Docker
 ```bash
-npm run dev:pi:setup
+cd dietPi 
+./build.sh
+```
+## List serial ports for connection to shell
+needs usb in gadget serial ( not power usb )
+```
+ls /dev/tty.* 
+screen /dev/tty.usbmodem2146101 115200
 ```
 
-then run the dev script:
+## Utilisation de screen (console série)
 
+### Lister les sessions screen actives
 ```bash
-npm run dev:pi
+screen -ls
+```
+
+### Rejoindre une session détachée
+```bash
+screen -r [ID]
+```
+
+### Détacher une session (laisser tourner en arrière-plan)
+Dans la session screen, appuyer sur :
+```
+Ctrl + a puis d
+```
+
+### Quitter et fermer la session screen
+Dans la session screen, taper :
+```bash
+exit
+```
+
+### Forcer la reconnexion à une session déjà attachée
+```bash
+screen -dr [ID]
+```
+
+### Supprimer une session detachée
+```bash
+screen -S [ID] -X quit
 ```

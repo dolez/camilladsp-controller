@@ -80,7 +80,7 @@ dtparam=audio=on
 #-------Serial/UART-----
 # NB: "enable_uart=1" will enforce "core_freq=250" on RPi models with onboard WiFi.
 enable_uart=1
-dtoverlay=dwc2
+dtoverlay=dwc2,g_serial,usb_serialnumber=missingconf
 dtoverlay=disable-bt
 
 #-------SD card HPD-----
